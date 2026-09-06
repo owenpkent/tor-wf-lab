@@ -1,0 +1,24 @@
+# Data: large, and some of it is DUA-gated. Never commit traces.
+data/
+*.npz
+*.pkl
+*.h5
+*.cell
+*.trace
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Results kept, scratch not
+track-a-robustness/results/scratch/
+*.log
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
