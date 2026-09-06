@@ -36,6 +36,15 @@ listing entirely**. Nothing to see the shape of.
 No DUA contact, form, or lead time is stated in either the wiki or the thesis.
 Only OSF's generic access-request mechanism was found. **Unconfirmed.**
 
+**Correction, 2026-09-06.** That mechanism is not usable here, so there is no
+platform route at all. The API reports `access_requests_enabled: true` on the
+node, which is what the paragraph above was based on, but OSF only renders a
+"Request Access" control on a node or component the visitor cannot view. This
+node is public and has **zero child components**, so nothing is gated behind a
+button and no button appears. The restricted data is simply absent rather than
+locked. Email to the authors is the only route, which is why
+`docs/correspondence/` now carries one combined request instead of two.
+
 ## Consequence for the two axes
 
 This is the answer the brief's step 1 asks for, and it is a qualified no.
