@@ -245,6 +245,49 @@ remains the better design, but for a different reason than first supposed: it
 degrades the features on the traces the guard does own, which is the 0.744
 baseline randomization leaves untouched.
 
+**What candidate A would buy, projected.** The measured conditionals price the
+policy without running it. Hold the two accuracies fixed and vary only how often
+the guard owns the first segment, which is what randomizing the initial leg
+changes:
+
+| Advantage | Measured ownership | Measured accuracy | Projected at ownership 0.448 | Projected at 0.25 |
+|---|---|---|---|---|
+| 0 ms | 0.448 | 0.5399 | 0.5399 | 0.4665 |
+| 32 ms | 0.561 | 0.6225 | 0.5786 | 0.5019 |
+| 64 ms | 0.674 | 0.6860 | 0.5861 | 0.4986 |
+| 128 ms | 0.884 | 0.8217 | 0.5783 | 0.4678 |
+| 256 ms | 0.961 | 0.8786 | 0.5481 | 0.4204 |
+| 512 ms | 0.977 | 0.8911 | 0.5366 | 0.4037 |
+
+**The projected curve is flat.** That is the property a defense wants: buying
+latency stops paying. Today an attacker turns 0.540 into 0.891 by manufacturing
+half a second of advantage. With ownership pinned at the no-advantage rate, the
+same half second is worth 0.537, slightly *less* than doing nothing, and the
+best it can do anywhere on the sweep is about +0.05 at 32 to 64 ms, where
+accuracy on owned traces has risen but ownership no longer follows.
+
+The 0.25 column is the more likely landing point, and it is worth understanding
+why it is below the 0.448 baseline rather than equal to it. A first segment
+requires being primary at *both* endpoints. Independent coin flips at each end
+give 0.25. The observed no-advantage rate is 0.448 rather than 0.25 precisely
+because the two endpoints are not independent today: both order the same two
+paths by RTT, so they usually agree. Randomization breaks that correlation, and
+the broken correlation is a second win on top of removing the bias.
+
+Three caveats, since this is arithmetic on measured conditionals and not an
+experiment:
+
+- It assumes the conditionals hold under the new policy. For candidate A that is
+  reasonable on the FS side, because randomizing only the *initial* leg leaves
+  LowRTT to resume afterwards, so an advantaged leg that wins the start still
+  carries more of the tail. It is optimistic on the non-FS side for the same
+  reason: a guard that loses the start still has its advantage and would carry
+  more of the tail than the traces measured here.
+- Closed world again, so these are accuracies over monitored classes, not TPRs
+  at a fixed FPR.
+- It says nothing about the time-to-first-byte cost, which is the other half of
+  the argument and needs Shadow.
+
 ## Summary
 
 | Question | Answer |
@@ -255,4 +298,5 @@ baseline randomization leaves untouched.
 | 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
 | 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
 | 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls. Follow-up measurement: ownership x1.97 at 128 ms, enrichment only x1.19 |
+| 6a. Projection | Pinning ownership at the no-advantage rate flattens the curve: a 512 ms advantage would be worth 0.537 instead of 0.891, and at most about +0.05 anywhere on the sweep |
 | **Verdict** | **Go.** The mechanism is measured, the attack is one term rather than two, and the intervention that matters is one function. Ship candidate A as the engineering win and candidate B as the research contribution. Conditional only on asking the authors what they are already doing |
