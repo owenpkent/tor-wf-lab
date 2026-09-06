@@ -17,12 +17,17 @@ go/no-go decision. Both are now done.
 ```
 prompts/                    the two briefs, verbatim, treated as read-only
 track-a-robustness/
-  src/                      fetch, verify, loaders, classifiers (theirs is unreleased)
+  src/                      fetch and verify, loaders, the five classifiers, runners, plot
   data/                     OSF traces, gitignored, 9.9 GB
-  results/                  numbers tables, the plot
-  logs/deltas.md            every difference between their setup and ours
-track-b-conflux/notes/      reading notes feeding the memo
-docs/                       finished writeups (plot + table for A, memo for B)
+  results/                  per-classifier JSON, generated tables, the scatter plot
+  logs/                     deltas.md, paper-numbers.md, osf-inventory.md
+  RUNBOOK-5090.md           what ran on the GPU box, and what it cost
+track-b-conflux/
+  notes/                    01-05 scoping, 06-07 measurement, 08-09 Shadow
+  src/                      first-segment detector, the two trace measurements
+  shadow/                   Shadow experiment generator, pcap analysis, sweep
+  results/                  JSON and figures for both measurements and the sim
+docs/                       the two finished writeups, plus correspondence/
 ```
 
 ## Reference material
@@ -112,12 +117,18 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
    two-axis question is answerable, even though cell values are not comparable
    and step 3 stays unsatisfiable. See `results/vs-paper.md`.
 5. **Still open, but less costly than it looked.** The thesis authors' own code is
-   still missing and the draft email in `docs/correspondence/` is unsent. But the
-   *original* classifier authors did release theirs, so RF and Holmes are
-   transcriptions of `robust-fingerprinting/RF` and WFlib rather than guesses.
-   Only DF, Tik-Tok and k-FP are reimplemented from paper text.
+   still missing, and the email asking for it is written and unsent
+   (`docs/correspondence/03-combined-request.md`). But the *original* classifier
+   authors did release theirs, so RF and Holmes are transcriptions of
+   `robust-fingerprinting/RF` and WFlib rather than guesses. Only DF, Tik-Tok
+   and k-FP are reimplemented from paper text.
 6. ~~The four CNNs need the 5090 machine.~~ Done, and Holmes ran too, making five
    classifiers rather than four. See `docs/track-a-robustness-axes.md`.
+7. **Still open.** The DUA-gated background set, same email. There is **no
+   platform route**: the OSF node reports `access_requests_enabled: true` but is
+   public with zero child components, so OSF renders no "Request Access" control
+   and the restricted data is absent rather than gated. Email is the only path.
+   This is why the two earlier drafts merged into one.
 
 ## What has actually run
 
