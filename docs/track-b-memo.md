@@ -20,12 +20,14 @@ aimed by measurement rather than by guesswork:
 Three things moved between the scoping questions and this verdict, all of them
 from open data on a laptop in an afternoon.
 
-**The mechanism is confirmed.** First-segment ownership tracks latency advantage
-directly: 0.448 with no advantage, 0.891 at 128 ms, 0.977 at 512 ms. The
+**The mechanism is confirmed twice, on real traces and in simulation.**
+First-segment ownership tracks latency advantage directly: 0.448 with no advantage, 0.891 at 128 ms, 0.977 at 512 ms. The
 detector returns exactly 1.0000 on non-Conflux control traces, and the paper's
 own "about 65% of traces hold less than half a load" reproduces at 0.659 without
 being aimed at. This is no longer a premise the project rests on; it is a result
-the project starts from.
+the project starts from. Unpatched tor in Shadow shows the same bias from the
+other direction: two identical guards split a download 0.512, and one advantaged
+guard takes 0.71 by 64 ms (section 4).
 
 **The attack is one term, not two.** Measuring what ownership is worth, rather
 than inferring it, gives 128 ms of advantage a x1.97 multiplier on *how often*
@@ -149,26 +151,43 @@ is an arms-race constant, and it touches all three schedulers.
 
 Build order: B, then A, then propose C to tor-dev.
 
-## 4. Shadow
+## 4. Shadow: usable, and now used
 
-Usable, and the right tool for the latency delta, but third-cheapest of four
-environments and not where to start. Tor's own WF-defense guidance
-(`doc/HACKING/CircuitPaddingDevelopment.md` section 4) ranks trace simulation
-first for iteration, rules out Chutney for anything latency-dependent, puts
-Shadow third, and calls live-network-with-your-own-relays the gold standard.
+Shadow builds and runs on this machine, and the validation experiment the rest
+of this section proposed has been run. Full write-up in
+`track-b-conflux/notes/09-shadow-validation.md`.
 
-A minimal experiment needs one client, two guards with a controllable RTT delta,
-one shared exit, congestion control and Conflux on, and enough volume to cross
-slow start. It does **not** need a browser: the measurement at this stage is the
-first-segment rate and the share of the first N cells, which are scheduler
-properties. `tgen` is enough, and the WF classification belongs in a separate
-offline step.
+**Stock, unpatched tor 0.4.9.11 reproduces the latency bias.** With two
+identical guards the client's download splits 0.512 +/- 0.058, a coin flip. Give
+one guard an advantage and it takes 0.63 of the download at 32 ms, 0.71 by
+64 ms, and 0.78 at 512 ms. Ten seeds per point, built on Shadow's own private
+Tor network example with a three-node graph, both guards pinned via
+`EntryNodes`, and per-guard pcap.
 
-Setup cost: two to four days for Shadow plus tornettools from scratch, and a 1%
-network runs to about 30 GiB of RAM for an hour of simulated time. A hand-built
-topology of six or seven nodes is hours to a day and contains the whole effect,
-since the effect is local to one conflux set. Scale only matters once the claim
-becomes "and it does not hurt the network".
+Two results the traces could not give:
+
+- **Byte share plateaus near 0.78, it does not approach 1.0.** That is LowRTT's
+  congestion window doing exactly what `conflux.c:307` says: the fast leg is
+  preferred only while it has cwnd room, so the overflow goes down the slow leg
+  no matter how slow. An advantaged guard captures the part of the download that
+  fits in its window, not the whole thing.
+- **Ownership and share are different quantities.** Ownership saturates at 0.977
+  on the real traces; share saturates near 0.78 here. Same mechanism, not
+  interchangeable numbers.
+
+Cost was far below the estimate. Shadow builds in about five minutes, a
+30-simulated-minute run takes roughly 7 seconds, and the 60-run sweep finished
+in under ten minutes. The two-to-four-day figure applies to a full tornettools
+model, which remains out of reach on this machine's 24 GB; the small hand-built
+topology this section recommended instead was an afternoon including the build.
+
+What it does not do: tgen streams are bulk transfers rather than page loads, the
+metric is byte share rather than per-set first-segment attribution, and a run
+yields only about 12 conflux sets, which is most of the seed spread above.
+
+**The harness now prices a policy change.** The same sweep against a patched tor
+gives the defense's effect, and tgen's stream timings give the time-to-first-byte
+cost, from one run.
 
 ## 5. Prior art
 
@@ -295,7 +314,7 @@ experiment:
 | 1. LowRTT mechanics | Lowest-RTT leg with cwnd room; client picks the exit's algorithm; CWNDRTT is unreachable dead code |
 | 2. Crux | Survives. Reorder can be bounded, and only the first segment needs de-biasing, but TTFB cost is highest where the bias matters most |
 | 3. Policies | Randomized first leg (now the primary, it attacks the dominant term); CWNDRTT-for-first-K (goes below the residual leak); RTT quantization with a consensus-parameter floor |
-| 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
+| 4. Shadow | **Built and run.** Stock tor reproduces the bias: 0.512 share at no advantage, 0.71 by 64 ms. Byte share plateaus near 0.78 because of LowRTT's cwnd fallback |
 | 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
 | 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls. Follow-up measurement: ownership x1.97 at 128 ms, enrichment only x1.19 |
 | 6a. Projection | Pinning ownership at the no-advantage rate flattens the curve: a 512 ms advantage would be worth 0.537 instead of 0.891, and at most about +0.05 anywhere on the sweep |

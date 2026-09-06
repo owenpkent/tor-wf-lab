@@ -43,5 +43,8 @@ on asking the authors what they are already doing.
   right against 0.374 of the rest, and 128 ms of advantage multiplies ownership
   by 1.97 but per-trace accuracy on owned traces by only 1.19. Ownership is the
   attack.
+- Shadow is built here and the validation ran: unpatched tor 0.4.9.11 splits a
+  download 0.512 between two identical guards and 0.71 to a guard with a 64 ms
+  advantage (`notes/09-shadow-validation.md`). Harness in `shadow/`.
 - Next action is the authors question in `../docs/correspondence/01`, then
-  candidate B: make `CONFLUX_ALG_CWNDRTT` reachable and measure it.
+  candidate B: make `CONFLUX_ALG_CWNDRTT` reachable and rerun the same sweep.

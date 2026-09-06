@@ -141,3 +141,9 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
   first-segment traces correctly against 0.374 of the rest. Advantage buys
   ownership (x1.97 at 128 ms) far more than it buys accuracy on owned traces
   (x1.19).
+- **Track B, Shadow validation**:
+  `track-b-conflux/notes/09-shadow-validation.md`. Unpatched tor 0.4.9.11 in
+  Shadow 3.3.0 reproduces the bias from the other direction: two identical
+  guards split a download 0.512, a guard with a 64 ms advantage takes 0.71.
+  Byte share plateaus near 0.78 because LowRTT falls back to the slow leg once
+  the fast leg's cwnd fills. Harness in `track-b-conflux/shadow/`.
