@@ -1,204 +1,219 @@
-"""Torch models and input transforms for the four CNN classifiers.
+"""Architectures and input transforms for the four CNN classifiers.
 
-The authors released no code (logs/osf-inventory.md), so these are
-reimplementations from the original papers at the hyperparameters in thesis
-Table C.1. Every judgement call is listed in logs/deltas.md.
+Reimplementations. The paper's authors released no code (see logs/deltas.md),
+so each architecture comes from its own original paper, and the training
+hyperparameters come from thesis Table C.1. Nothing here is retuned.
 
-  DF       Sirinam et al. 2018, 1D CNN over the direction sequence
-  Tik-Tok  Rahman et al. 2020, the DF architecture over direction x timestamp
-  RF       Shen et al. 2023, 2D CNN over a Traffic Aggregation Matrix
-  Holmes   Deng et al. 2024, deliberately NOT implemented, see note at bottom
+Input transforms, one per classifier, all from a raw (X, T) pair where
+X is (n, 5000) int8 direction (+1 out, -1 in, 0 pad) and T is (n, 5000)
+float32 arrival time in seconds:
 
-Input transforms take the (X, T) arrays exactly as the .npz files store them:
-X is +1 out / -1 in / 0 pad, T is seconds, both (n, 5000).
+  DF       direction, length 5000
+  Tik-Tok  direction * timestamp, length 5000
+  RF       TAM, 2 x 1800 packet counts per time slot
+
+TAM slot duration is TMAX / N. Measured on the actual OSF files, every
+collection caps at 45.00 s, so the thesis's "max load time set per experiment"
+resolves to TMAX = 45.0 here. See logs/deltas.md.
 """
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-TRACE_LEN = 5000
-TAM_LEN = 1800          # thesis Table C.1
-TAM_TMAX = 45.0         # measured: every collection caps at exactly 45.00 s
-
-
-# --------------------------------------------------------------------------
-# input transforms
-# --------------------------------------------------------------------------
-
-def direction_input(X, T=None):
-    """DF: the direction sequence alone."""
-    return torch.from_numpy(X.astype(np.float32)).unsqueeze(1)
+TMAX = 45.0          # measured cap, all five collections
+TAM_N = 1800         # thesis Table C.1
 
 
-def directional_timing_input(X, T):
-    """Tik-Tok: direction x timestamp, so sign carries direction and magnitude
-    carries arrival time."""
-    return torch.from_numpy((X.astype(np.float32) * T.astype(np.float32))).unsqueeze(1)
+# ---------------------------------------------------------------- transforms
+
+def df_input(X, T=None):
+    """DF: direction only, +1 / -1 / 0."""
+    return X.astype(np.float32)[:, None, :]
 
 
-def tam(X, T, n_slots=TAM_LEN, t_max=TAM_TMAX, chunk=2048):
-    """RF: Traffic Aggregation Matrix, (n, 2, n_slots) counts per time slot.
+def tiktok_input(X, T):
+    """Tik-Tok: directional timing, direction * timestamp."""
+    return (X.astype(np.float32) * T.astype(np.float32))[:, None, :]
 
-    Row 0 counts outgoing cells, row 1 incoming. Slot width is t_max / n_slots,
-    so the published 1800 slots over the 45 s cap give 25 ms slots. Cells beyond
-    t_max fall in the last slot, as in the original.
 
-    Built with a single bincount per chunk rather than np.add.at, which is an
-    order of magnitude faster here. Returned as uint16: the entries are small
-    counts and the cache is otherwise 288 MB per collection.
+def tam_input(X, T, n_slots=TAM_N, tmax=TMAX, chunk=2048):
+    """RF: Traffic Aggregation Matrix, (n, 2, n_slots) of packet counts.
+
+    Row 0 counts outgoing packets per slot, row 1 incoming. Binning follows the
+    authors' released code (RF/FeatureExtraction/packets_per_slot.py) exactly:
+
+        idx = int(t * (n_slots - 1) / tmax)          for t < tmax
+        idx = n_slots - 1                            for t >= tmax
+
+    Note the (n_slots - 1) divisor, so the slot is tmax / (n_slots - 1), not
+    tmax / n_slots. At their default tmax = 80 that is 44.5 ms, which is the
+    "roughly 44 ms" the thesis quotes; at the tmax = 45 measured on these files
+    it is 25.0 ms. Late packets accumulate in the final slot rather than being
+    dropped. Counts are raw, unnormalised, as in their code.
     """
-    n = X.shape[0]
-    out = np.zeros((n, 2, n_slots), dtype=np.uint16)
-    width = t_max / n_slots
-    per_trace = 2 * n_slots
-    for lo in range(0, n, chunk):
-        hi = min(lo + chunk, n)
-        Xc, Tc = X[lo:hi], T[lo:hi]
-        rows, cols = np.nonzero(Xc != 0)
-        if rows.size == 0:
-            continue
-        slots = np.minimum((Tc[rows, cols] / width).astype(np.int64), n_slots - 1)
-        row_off = (Xc[rows, cols] < 0).astype(np.int64) * n_slots
-        flat = rows.astype(np.int64) * per_trace + row_off + slots
-        counts = np.bincount(flat, minlength=(hi - lo) * per_trace)
-        out[lo:hi] = counts.reshape(hi - lo, 2, n_slots).astype(np.uint16)
+    n = len(X)
+    out = np.zeros((n, 2, n_slots), dtype=np.float32)
+    for s in range(0, n, chunk):
+        e = min(s + chunk, n)
+        xb, tb = X[s:e], T[s:e].astype(np.float64)
+        b = e - s
+        idx = np.where(tb >= tmax, n_slots - 1,
+                       (tb * (n_slots - 1) / tmax).astype(np.int32))
+        idx = np.clip(idx, 0, n_slots - 1)
+        rows = np.arange(b)[:, None] * (2 * n_slots)
+        for r, mask in ((0, xb > 0), (1, xb < 0)):
+            if not mask.any():
+                continue
+            flat = (rows + r * n_slots + idx)[mask]
+            counts = np.bincount(flat.ravel(), minlength=b * 2 * n_slots)
+            out[s:e] += counts[: b * 2 * n_slots].reshape(b, 2, n_slots)
     return out
 
 
-def tam_downsample(tam_arr, n_slots):
-    """Aggregate a cached 1800-slot TAM to a coarser one.
+TRANSFORMS = {"df": df_input, "tiktok": tiktok_input, "rf": tam_input}
 
-    Appendix C.1's slot-size sweep is the reason this exists: 1800 slots is
-    25 ms, 300 is 150 ms, 150 is 300 ms. Only exact divisors are allowed, so the
-    coarse TAM is identical to one built directly at that resolution.
+
+# ---------------------------------------------------------------- DF backbone
+
+def _keras_same_pool(x, k, stride):
+    """Keras 'same' padding for max pooling: out = ceil(in / stride).
+
+    PyTorch's MaxPool1d padding is symmetric and capped at k/2, which cannot
+    express Keras's asymmetric right-heavy pad. DF is a Keras model and its
+    published tensor shapes only reproduce with this padding.
     """
-    fine = tam_arr.shape[-1]
-    if n_slots == fine:
-        return tam_arr
-    if fine % n_slots:
-        raise ValueError(f"{n_slots} does not divide the cached {fine} slots")
-    k = fine // n_slots
-    return tam_arr.reshape(*tam_arr.shape[:-1], n_slots, k).sum(-1)
+    n = x.shape[-1]
+    out = -(-n // stride)
+    total = max((out - 1) * stride + k - n, 0)
+    if total:
+        x = F.pad(x, (total // 2, total - total // 2), value=float("-inf"))
+    return F.max_pool1d(x, k, stride)
 
-
-def tam_input(tam_arr):
-    return torch.from_numpy(tam_arr.astype(np.float32))
-
-
-# --------------------------------------------------------------------------
-# architectures
-# --------------------------------------------------------------------------
 
 class DFNet(nn.Module):
-    """Deep Fingerprinting, Sirinam et al. CCS 2018, Table 1 of that paper.
+    """Deep Fingerprinting (Sirinam et al., CCS 2018), Table 10.
 
-    Four conv blocks of two convolutions each, filters 32/64/128/256, kernel 8,
-    max pool 8 stride 4, ELU in the first block and ReLU after, then two 512
-    fully connected layers. Dropouts 0.1 per conv block and 0.7 / 0.5 in the
-    classifier are the published values.
+    Four conv blocks with filters 32/64/128/256, kernel 8, each block two
+    convolutions then max pool (size 8, stride 4) and dropout 0.1. Block 1 uses
+    ELU, later blocks ReLU, which is the paper's stated activation schedule.
+    Two 512-unit fully connected layers with dropout 0.7 and 0.5.
+
+    Tik-Tok (Rahman et al., PoPETs 2020) is this same network on a different
+    input, so it shares the class.
     """
 
-    def __init__(self, n_classes, in_len=TRACE_LEN):
+    FILTERS = (32, 64, 128, 256)
+    KERNEL = 8
+    POOL, POOL_STRIDE = 8, 4
+
+    def __init__(self, n_classes, in_len=5000, in_ch=1):
         super().__init__()
-        blocks, in_ch = [], 1
-        for i, (out_ch, act) in enumerate(zip((32, 64, 128, 256),
-                                              (nn.ELU, nn.ReLU, nn.ReLU, nn.ReLU))):
-            blocks += [
-                nn.Conv1d(in_ch, out_ch, 8, padding="same"), nn.BatchNorm1d(out_ch), act(),
-                nn.Conv1d(out_ch, out_ch, 8, padding="same"), nn.BatchNorm1d(out_ch), act(),
-                nn.MaxPool1d(8, stride=4, padding=2), nn.Dropout(0.1),
-            ]
-            in_ch = out_ch
-        self.features = nn.Sequential(*blocks)
-        with torch.no_grad():
-            flat = self.features(torch.zeros(1, 1, in_len)).numel()
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(flat, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.7),
-            nn.Linear(512, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.5),
+        self.blocks = nn.ModuleList()
+        self.acts = []
+        c_in = in_ch
+        for i, c in enumerate(self.FILTERS):
+            self.blocks.append(nn.ModuleDict({
+                "c1": nn.Conv1d(c_in, c, self.KERNEL, padding="same"),
+                "b1": nn.BatchNorm1d(c),
+                "c2": nn.Conv1d(c, c, self.KERNEL, padding="same"),
+                "b2": nn.BatchNorm1d(c),
+                "do": nn.Dropout(0.1),
+            }))
+            self.acts.append(F.elu if i == 0 else F.relu)
+            c_in = c
+
+        n = in_len
+        for _ in self.FILTERS:
+            n = -(-n // self.POOL_STRIDE)
+        self.flat_dim = self.FILTERS[-1] * n
+
+        self.fc = nn.Sequential(
+            nn.Linear(self.flat_dim, 512), nn.BatchNorm1d(512), nn.ReLU(),
+            nn.Dropout(0.7),
+            nn.Linear(512, 512), nn.BatchNorm1d(512), nn.ReLU(),
+            nn.Dropout(0.5),
             nn.Linear(512, n_classes),
         )
 
     def forward(self, x):
-        return self.classifier(self.features(x))
+        for blk, act in zip(self.blocks, self.acts):
+            x = act(blk["b1"](blk["c1"](x)))
+            x = act(blk["b2"](blk["c2"](x)))
+            x = _keras_same_pool(x, self.POOL, self.POOL_STRIDE)
+            x = blk["do"](x)
+        return self.fc(x.flatten(1))
 
+
+# ---------------------------------------------------------------- RF backbone
 
 class RFNet(nn.Module):
-    """Robust Fingerprinting, Shen et al. USENIX Security 2023, over a TAM.
+    """RF (Shen et al., USENIX Security 2023), transcribed from the authors'
+    released RF/models/RF.py.
 
-    Table C.1 pins the input (TAM length 1800) and the training schedule but
-    gives only "2D CNN" for the architecture, and no code was released. This is
-    therefore a reimplementation in the spirit of the paper rather than a
-    reproduction of it: four 2D conv blocks over the (2, n_slots) matrix,
-    pooling along the time axis only, since the channel axis is 2 wide.
-    Logged as a delta.
+    Input is the TAM as a single-channel 2D image, (batch, 1, 2, 1800). Two 2D
+    conv blocks, then the tensor is reshaped back to 32 channels and run through
+    a 1D VGG-style stack whose final convolution emits one channel per class,
+    global-average-pooled to logits. There is no fully connected layer.
+
+    Two faithfully reproduced quirks, both in the released code, both recorded
+    in logs/deltas.md rather than "fixed":
+      * the reshape after the 2D stack is (B, 64, 1, W) -> (B, 32, 2W), which
+        mixes channel and width rather than flattening cleanly;
+      * the final class-emitting convolution is followed by BatchNorm and ReLU,
+        so the pooled logits are non-negative before CrossEntropyLoss.
     """
 
-    def __init__(self, n_classes, n_slots=TAM_LEN):
+    CFG = [128, 128, "M", 256, 256, "M", 512]
+
+    def __init__(self, n_classes):
         super().__init__()
-        blocks, in_ch = [], 1
-        for out_ch in (32, 64, 128, 256):
-            blocks += [
-                nn.Conv2d(in_ch, out_ch, (2, 8), padding=(0, 4) if in_ch == 1 else "same"),
-                nn.BatchNorm2d(out_ch), nn.ReLU(),
-                nn.Conv2d(out_ch, out_ch, (1, 8), padding="same"),
-                nn.BatchNorm2d(out_ch), nn.ReLU(),
-                nn.MaxPool2d((1, 4)), nn.Dropout(0.1),
-            ]
-            in_ch = out_ch
-        self.features = nn.Sequential(*blocks)
-        with torch.no_grad():
-            flat = self.features(torch.zeros(1, 1, 2, n_slots)).numel()
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(flat, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.5),
-            nn.Linear(512, n_classes),
+        self.first_out = 32
+        self.first_layer = self._first_layers()
+        self.features = self._make_layers(self.CFG + [n_classes], in_channels=32)
+        self.classifier = nn.AdaptiveAvgPool1d(1)
+        self._init_weights()
+
+    @staticmethod
+    def _first_layers(in_channels=1, out_channel=32):
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channel, (3, 6), 1, (1, 1)),
+            nn.BatchNorm2d(out_channel), nn.ReLU(),
+            nn.Conv2d(out_channel, out_channel, (3, 6), 1, (1, 1)),
+            nn.BatchNorm2d(out_channel), nn.ReLU(),
+            nn.MaxPool2d((1, 3)), nn.Dropout(0.1),
+            nn.Conv2d(out_channel, 64, (3, 6), 1, (1, 1)),
+            nn.BatchNorm2d(64), nn.ReLU(),
+            nn.Conv2d(64, 64, (3, 6), 1, (1, 1)),
+            nn.BatchNorm2d(64), nn.ReLU(),
+            nn.MaxPool2d((2, 2)), nn.Dropout(0.1),
         )
 
+    @staticmethod
+    def _make_layers(cfg, in_channels=32):
+        layers = []
+        for v in cfg:
+            if v == "M":
+                layers += [nn.MaxPool1d(3), nn.Dropout(0.3)]
+            else:
+                layers += [nn.Conv1d(in_channels, v, 3, 1, 1),
+                           nn.BatchNorm1d(v), nn.ReLU()]
+                in_channels = v
+        return nn.Sequential(*layers)
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, (2.0 / n) ** 0.5)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
     def forward(self, x):
-        if x.dim() == 3:
-            x = x.unsqueeze(1)          # (n, 2, slots) -> (n, 1, 2, slots)
-        return self.classifier(self.features(x))
-
-
-# --------------------------------------------------------------------------
-# registry: hyperparameters verbatim from thesis Table C.1
-# --------------------------------------------------------------------------
-
-# net takes (n_classes, input_width). The width must come from the data, not a
-# default: the RF slot-size sweep feeds 1800, 300 or 150 slots to the same net.
-SPECS = {
-    "df": {
-        "net": lambda k, L: DFNet(k, in_len=L),
-        "transform": direction_input,
-        "optimizer": "adamax", "lr": 0.002, "betas": (0.9, 0.999), "eps": 1e-8,
-        "batch": 128, "epochs": 30, "early_stop": None, "lr_decay": None,
-    },
-    "tiktok": {
-        "net": lambda k, L: DFNet(k, in_len=L),
-        "transform": directional_timing_input,
-        "optimizer": "adamax", "lr": 0.002, "betas": (0.9, 0.999), "eps": 1e-8,
-        "batch": 32, "epochs": 30, "early_stop": 6, "lr_decay": None,
-    },
-    "rf": {
-        "net": lambda k, L: RFNet(k, n_slots=L),
-        "transform": None,              # uses the TAM cache, see cache_tam.py
-        "optimizer": "adam", "lr": 5e-4, "betas": (0.9, 0.999), "eps": 1e-8,
-        "batch": 200, "epochs": 30, "early_stop": None,
-        "lr_decay": lambda epoch: 0.2 ** (epoch / 30),
-    },
-}
-
-# Holmes is absent on purpose. Table C.1 gives it a dual-branch CNN, two
-# optimizers, two batch sizes and an unweighted mix of CrossEntropy and
-# SupConLoss over a 1000-length temporal branch and a 2000-length TAF branch.
-# That is not enough to reimplement faithfully, and an approximation would
-# produce a number that looks like a measurement. Report Holmes as not run.
-
-
-def build_optimizer(model, spec):
-    if spec["optimizer"] == "adamax":
-        return torch.optim.Adamax(model.parameters(), lr=spec["lr"],
-                                  betas=spec["betas"], eps=spec["eps"])
-    return torch.optim.Adam(model.parameters(), lr=spec["lr"],
-                            betas=spec["betas"], eps=spec["eps"])
+        x = self.first_layer(x)
+        x = x.view(x.size(0), self.first_out, -1)
+        x = self.features(x)
+        return self.classifier(x).view(x.size(0), -1)

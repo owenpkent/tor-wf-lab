@@ -1,9 +1,22 @@
 #!/usr/bin/env python3
-"""Precompute the RF TAM cache for the five axis collections.
+"""SUPERSEDED, and currently non-functional. Kept for history, do not run.
 
-Caches at the published 1800 slots. Appendix C.1's coarser settings (300 and
-150 slots, i.e. 150 ms and 300 ms) are exact aggregations of it, so one cache
-covers the whole slot-size sweep. Written to data/cache/, which is gitignored.
+This was written against the CPU-prep `models.py`, whose API (`TAM_LEN`, `tam`,
+`tam_downsample`) no longer exists, so importing it raises AttributeError.
+
+Two reasons it was not ported:
+
+1. It is unnecessary. Building the TAM for a whole collection takes about 5 s
+   on the GPU box, so `run_torch.py rf` just builds it, once per collection per
+   run, and never touches disk.
+2. Its central shortcut is invalid under the corrected binning. The authors'
+   released code bins with `idx = int(t*(N-1)/Tmax)`, so a slot is Tmax/(N-1),
+   not Tmax/N. Under that formula the 1800-slot matrix does not partition
+   evenly into 300 or 150 slots, so `tam_downsample` is not the exact
+   aggregation it claims to be, and the slot-size sweep genuinely does need a
+   rebuild per setting. `run_torch.py --slots` does exactly that.
+
+See logs/deltas.md, row "TAM Tmax and binning".
 """
 import os, sys, time
 import numpy as np

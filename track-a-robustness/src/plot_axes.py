@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
-"""The Track A deliverable: cross-network F1 against six-month F1.
+"""The Track A deliverable: robustness axes scatter plot plus numbers table.
 
-Reads every results/<model>.json written by run_kfp.py or run_torch.py, plots
-one point per classifier with error bars over seeds, and prints the underlying
-table. Missing classifiers are reported as missing rather than omitted quietly.
+Reads every results/*.json written by run_kfp.py / run_torch.py (they share a
+row schema), and plots one point per classifier:
 
-  python plot_axes.py                    -> results/axes.png
+    x = cross-network macro F1   (train AU, test CA)
+    y = six-month drift macro F1 (train UK month 0, test UK month 6)
+
+Error bars are +/- 1 sd over seeds. Both axes are CLOSED-WORLD macro F1 and are
+not comparable to the paper's open-world Table 4.1 / 4.3 numbers; the axis
+labels say so in the figure itself, because the figure will outlive its caption.
+
+Sweep files (results/rf-n*.json) are sensitivity runs, not main-table entries,
+and are excluded from the plot unless --include-sweeps is passed.
+
+Usage: python plot_axes.py [--include-sweeps]
 """
-import glob, json, os
+import argparse, glob, json, os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -16,92 +25,119 @@ import matplotlib.pyplot as plt
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "results")
 
-EXPECTED = ["k-FP", "df", "tiktok", "rf", "holmes"]
-PRETTY = {"k-FP": "k-FP", "df": "DF", "tiktok": "Tik-Tok", "rf": "RF", "holmes": "Holmes"}
-X_CELL = ("cross-network", "ca")        # network mismatch
-Y_CELL = ("drift", "month6")            # longest available gap
-
-SURFACE, INK, INK2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e2e1dc"
-MARK = "#2a78d6"
+X_CELL = ("cross-network", "ca")        # network-mismatch axis
+Y_CELL = ("drift", "month6")            # temporal-drift axis
+ANCHORS = [("cross-network", "in-dist"), ("drift", "in-dist"),
+           ("drift", "month2")]
 
 
-def load_all():
-    out = {}
+def load_all(include_sweeps=False):
+    out = []
     for path in sorted(glob.glob(os.path.join(RESULTS, "*.json"))):
-        if "smoke" in os.path.basename(path) or "fs-sweep" in path:
+        base = os.path.basename(path)[:-5]
+        if not include_sweeps and base.startswith("rf-n"):
             continue
         d = json.load(open(path))
-        rows = d.get("rows", [])
-        if not rows:
+        if "rows" not in d:
             continue
-        out[d.get("classifier", os.path.basename(path))] = rows
+        out.append((base, d))
     return out
 
 
 def cell_stats(rows, axis, cell):
     v = [r["f1_macro"] for r in rows if r["axis"] == axis and r["cell"] == cell]
-    return (np.mean(v), np.std(v), len(v)) if v else (None, None, 0)
+    if not v:
+        return None
+    return float(np.mean(v)), float(np.std(v)), len(v)
 
 
 def main():
-    data = load_all()
-    pts = []
-    print(f"{'classifier':10s} {'cross-network CA':>22s} {'drift month6':>20s}  seeds")
-    for key, rows in data.items():
-        xm, xs, nx = cell_stats(rows, *X_CELL)
-        ym, ys, ny = cell_stats(rows, *Y_CELL)
-        if xm is None or ym is None:
-            print(f"{PRETTY.get(key, key):10s} incomplete: "
-                  f"cross-network={'yes' if xm else 'no'} drift={'yes' if ym else 'no'}")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--include-sweeps", action="store_true")
+    ap.add_argument("--out", default=os.path.join(RESULTS, "axes.png"))
+    a = ap.parse_args()
+
+    data = load_all(a.include_sweeps)
+    if not data:
+        print(f"no results/*.json under {RESULTS}")
+        return 1
+
+    fig, ax = plt.subplots(figsize=(7.2, 6.4))
+    colors = plt.cm.tab10(np.linspace(0, 1, 10))
+    table = []
+
+    for i, (base, d) in enumerate(data):
+        rows = d["rows"]
+        name = d.get("classifier", base)
+        x = cell_stats(rows, *X_CELL)
+        y = cell_stats(rows, *Y_CELL)
+        rec = {"classifier": name, "file": base + ".json"}
+        for (axis, cell) in [X_CELL, Y_CELL] + ANCHORS:
+            s = cell_stats(rows, axis, cell)
+            rec[f"{axis}/{cell}"] = s
+        table.append(rec)
+
+        if x is None or y is None:
+            print(f"[skip plot] {name}: missing "
+                  f"{'cross-network/ca' if x is None else ''} "
+                  f"{'drift/month6' if y is None else ''}".rstrip())
             continue
-        pts.append((PRETTY.get(key, key), xm, xs, ym, ys))
-        print(f"{PRETTY.get(key, key):10s} {xm:>13.4f} +/- {xs:.4f} {ym:>11.4f} +/- {ys:.4f}  {min(nx, ny)}")
+        ax.errorbar(x[0], y[0], xerr=x[1], yerr=y[1], fmt="o", ms=9,
+                    capsize=4, lw=1.5, color=colors[i % 10], label=name, zorder=3)
+        # keep labels inside the axes: points near the right edge label leftwards
+        left = x[0] > 0.88
+        ax.annotate(name, (x[0], y[0]), textcoords="offset points",
+                    xytext=(-12 if left else 12, 7), fontsize=10,
+                    ha="right" if left else "left", color=colors[i % 10])
 
-    missing = [PRETTY[m] for m in EXPECTED if m not in data]
-    if missing:
-        print(f"\nnot run: {', '.join(missing)}")
-
-    if not pts:
-        print("nothing to plot yet")
-        return
-
-    fig, ax = plt.subplots(figsize=(6.8, 6.2))
-    fig.patch.set_facecolor(SURFACE)
-    ax.set_facecolor(SURFACE)
-    ax.grid(True, color=GRID, linewidth=0.8)
+    lo, hi = -0.02, 1.02
+    ax.plot([lo, hi], [lo, hi], ls=":", lw=1, color="0.6", zorder=1)
+    ax.text(0.30, 0.315, "equal on both axes", fontsize=8, color="0.5",
+            rotation=45, rotation_mode="anchor", ha="left", va="bottom",
+            transform=ax.transAxes)
+    ax.set_xlim(lo, hi)
+    ax.set_ylim(lo, hi)
+    ax.set_xlabel("Network-mismatch robustness\nclosed-world macro F1, train AU / test CA")
+    ax.set_ylabel("Temporal-drift robustness\nclosed-world macro F1, train UK month 0 / test UK month 6")
+    ax.set_title("Are network mismatch and temporal drift distinct robustness axes?\n"
+                 "Closed world, monitored classes only, error bars +/- 1 sd over seeds",
+                 fontsize=10)
+    ax.grid(alpha=0.25, zorder=0)
     ax.set_axisbelow(True)
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
-    for s in ("left", "bottom"):
-        ax.spines[s].set_color(GRID)
-    ax.tick_params(colors=INK2, labelsize=9, length=0)
-    ax.plot([0, 1], [0, 1], color=GRID, linewidth=1.5, zorder=1)
-    ax.text(0.97, 0.99, "equally robust on both axes", color=INK2, fontsize=8,
-            rotation=45, ha="right", va="top", rotation_mode="anchor")
+    fig.tight_layout()
+    fig.savefig(a.out, dpi=180)
+    print(f"wrote {a.out}")
 
-    # One hue for every point: identity is carried by the direct label beside
-    # each marker, so colour is not doing categorical work here.
-    for name, xm, xs, ym, ys in pts:
-        ax.errorbar(xm, ym, xerr=xs, yerr=ys, fmt="o", markersize=9,
-                    color=MARK, ecolor=MARK, elinewidth=2, capsize=4,
-                    markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
-        ax.annotate(name, (xm, ym), textcoords="offset points", xytext=(11, 4),
-                    color=INK, fontsize=10)
+    # numbers table, same source as the plot so the two cannot disagree
+    md = [os.path.join(RESULTS, "axes-table.md")]
+    lines = ["# Track A: both axes, closed world", "",
+             "Generated by `src/plot_axes.py`. Mean macro F1 +/- sd over seeds, "
+             "seed count in brackets.", "",
+             "| Classifier | in-dist (AU) | cross-network CA | in-dist (UK m0) | "
+             "drift m2 | drift m6 |", "|---|---|---|---|---|---|"]
 
-    ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-    ax.set_xlabel("cross-network macro F1 (train AU, test CA)", color=INK2, fontsize=10)
-    ax.set_ylabel("six-month drift macro F1 (UK month 0 -> month 6)", color=INK2, fontsize=10)
-    ax.set_title("Are the two robustness axes distinct?", color=INK, fontsize=13,
-                 loc="left", pad=12)
-    note = "Closed world, macro F1 over monitored classes. NOT comparable to the paper's open-world tables."
-    if missing:
-        note += f"  Not run: {', '.join(missing)}."
-    fig.text(0.5, 0.005, note, ha="center", color=INK2, fontsize=8, wrap=True)
+    def fmt(s):
+        return "not run" if s is None else f"{s[0]:.4f} +/- {s[1]:.4f} [{s[2]}]"
 
-    dest = os.path.join(RESULTS, "axes.png")
-    fig.savefig(dest, dpi=160, bbox_inches="tight", facecolor=SURFACE)
-    print(f"\nwrote {dest}")
+    for rec in table:
+        lines.append(
+            f"| {rec['classifier']} | {fmt(rec['cross-network/in-dist'])} | "
+            f"{fmt(rec['cross-network/ca'])} | {fmt(rec['drift/in-dist'])} | "
+            f"{fmt(rec['drift/month2'])} | {fmt(rec['drift/month6'])} |")
+    lines += ["", "Degradation from each axis's in-distribution anchor:", "",
+              "| Classifier | cross-network | six-month drift |", "|---|---|---|"]
+    for rec in table:
+        a_x, c_x = rec["cross-network/in-dist"], rec["cross-network/ca"]
+        a_y, c_y = rec["drift/in-dist"], rec["drift/month6"]
+        dx = "n/a" if not (a_x and c_x) else f"{c_x[0]-a_x[0]:+.3f}"
+        dy = "n/a" if not (a_y and c_y) else f"{c_y[0]-a_y[0]:+.3f}"
+        lines.append(f"| {rec['classifier']} | {dx} | {dy} |")
+    open(md[0], "w").write("\n".join(lines) + "\n")
+    print(f"wrote {md[0]}")
+    for l in lines:
+        print(l)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
