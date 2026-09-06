@@ -1,16 +1,106 @@
 # tor-wf-lab
 
-Two scoped weekend investigations against Shadbeh, Khajavi & Wang, *Reality
-Check for Tor Website Fingerprinting in the Open World* (arXiv:2603.07412,
-March 2026).
+Two investigations into Tor website fingerprinting, run against Shadbeh, Khajavi
+& Wang, *Reality Check for Tor Website Fingerprinting in the Open World*
+(arXiv:2603.07412). One asks whether two kinds of classifier robustness are
+really distinct properties. The other asks whether a guard relay can buy itself
+a better view of your browsing by being fast, and whether Tor could stop it.
 
-They are independent. Track A aims at an experimental result, Track B aims at a
-go/no-go decision. Both are now done.
+Both are finished. Every number below is reproducible from open data with
+`make`, and everything that could not be measured is labelled as such.
 
-| Track | Question | Deliverable | Status |
-|---|---|---|---|
-| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Done. All five classifiers, both axes, 3 seeds, closed world, on the 5090. Verdict: no classifier is good at both, but the independence claim rests on RF. `docs/track-a-robustness-axes.md` |
-| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Done, and the kill test passed. Verdict: go, narrowed. `docs/track-b-memo.md` |
+---
+
+## Can a guard buy the start of your page load?
+
+Yes, and cheaply. Tor's Conflux splits a page load across two circuits, and the
+default LowRTT scheduler sends to whichever leg has the lowest round-trip time.
+A guard that makes itself look 128 ms closer goes from owning the feature-rich
+start of a load 45% of the time to owning it 89% of the time.
+
+![First-segment ownership against guard latency advantage](track-b-conflux/results/fs-rate.png)
+
+That is measured on the authors' own released Conflux traces, using their own
+published detector. The detector scores exactly 1.0000 on non-Conflux control
+traces, where every load has one leg and so must be a first segment, and it
+independently reproduces their "about 65% of traces hold less than half a load"
+claim at 0.659.
+
+Unpatched tor 0.4.9.11 in the Shadow simulator shows the same bias from the
+other direction: two identical guards split a download 0.512 / 0.488, a coin
+flip, and one advantaged guard takes 0.71 of it by 64 ms.
+
+![Download share against latency advantage, in simulation](track-b-conflux/results/shadow-sweep.png)
+
+**What it is worth, measured rather than assumed:** k-FP classifies 74% of the
+traces where the guard owns the first segment, against 37% of the rest. A 128 ms
+advantage multiplies *how often* the guard wins the start by 1.97, and its
+accuracy on the traces it wins by only 1.19. Ownership is the attack.
+
+**So the fix is small.** If ownership is the whole attack, the code to change is
+the initial leg choice, one function at `conflux.c:600`. Holding the measured
+conditionals fixed and pinning ownership back to its no-advantage rate flattens
+the curve: a 512 ms advantage would be worth 0.537 instead of 0.891, and at most
+about +0.05 anywhere on the sweep. Buying latency stops paying.
+
+Verdict, reasoning and the two kill conditions: **[`docs/track-b-memo.md`](docs/track-b-memo.md)**.
+
+Incidental finding along the way: `CONFLUX_ALG_CWNDRTT`, the one scheduler in
+Tor's tree designed to use both legs while bounding reordering, is implemented,
+dispatched at `conflux.c:697`, and unreachable. No UX value maps to it.
+
+---
+
+## Are the two robustness axes really distinct?
+
+Five classifiers, both axes, three seeds, closed world.
+
+![Cross-network F1 against six-month drift F1](track-a-robustness/results/axes.png)
+
+No classifier is good at both, so the hypothesis holds in its weaker form. The
+stronger claim, that the axes are independent properties, rests almost entirely
+on RF: it is fourth of five against network mismatch and first against drift,
+and the only classifier hurt more by changing country than by ageing six months.
+
+**What this run cannot claim.** The open-world background set is behind a data
+use agreement, so every number here is closed-world macro F1 and every number in
+the paper is open-world F1 at a tuned threshold. Different measurements. The
+drift column happens to land within 0.008 of the published month-2 values and
+the rank ordering matches theirs exactly, but that is corroboration and is not
+reproduction. The brief's "reproduce one paper number" gate is recorded as
+**unsatisfied**, because on open data it cannot be satisfied.
+
+Full verdict: **[`docs/track-a-robustness-axes.md`](docs/track-a-robustness-axes.md)**.
+
+---
+
+## Reproducing
+
+```bash
+make venv        # .venv plus the pinned analysis stack
+make fs-figure   # end to end from nothing: fetch 1.7 GB, measure, plot
+make figures     # redraw every figure from the JSON already in results/
+make help        # everything else
+```
+
+The traces are not in the repo. `make data` fetches all 9.9 GB from
+`osf.io/9m8ea` and verifies all 29 files against the authors' sha512 lists.
+The four CNN classifiers need a GPU and their own runbook,
+`track-a-robustness/RUNBOOK-5090.md`. The Shadow experiment needs Shadow, tgen
+and tor on PATH, and lives in `track-b-conflux/shadow/`.
+
+---
+
+## Scope, and what was not done
+
+| Track | Question | Status |
+|---|---|---|
+| A | Are network-mismatch and temporal-drift robustness distinct axes, with no classifier good at both? | Done. Five classifiers, 3 seeds, closed world. Gate 3 unsatisfiable on open data |
+| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Done. Verdict go, narrowed. No Tor patch written, per the brief |
+
+Not done, and deliberately: no Tor patches, no open-world numbers, no Holmes on
+Track A until the authors' pipeline was available, and no claim that any
+closed-world number here is comparable to a published one.
 
 ## Layout
 
@@ -130,31 +220,20 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
    and the restricted data is absent rather than gated. Email is the only path.
    This is why the two earlier drafts merged into one.
 
-## What has actually run
+## Where each result lives
 
-- **Track A, all five classifiers**, closed world, both axes, 3 seeds:
-  `docs/track-a-robustness-axes.md`, numbers in
-  `track-a-robustness/results/axes-table.md`, figure `results/axes.png`.
-  No classifier is good at both axes. DF is best across networks (0.968) and
-  loses 0.331 to six-month drift; RF is best on drift (0.748) and loses 0.250
-  across networks. RF is the only classifier that inverts, fourth of five on
-  network mismatch and first on drift, so the "distinct axes" claim rests on it.
-  The authors' own slot-size remedy does not reproduce closed-world and makes RF
-  worse on both axes (`results/rf-slot-sweep.md`). No cell value here is
-  comparable to a number in the paper, but the rank ordering on both axes is
-  identical to theirs.
-- **Track B, first-segment sweep**: `track-b-conflux/notes/06-fs-kill-test.md`.
-  A guard's first-segment ownership goes 0.448 -> 0.891 -> 0.977 as its latency
-  advantage goes 0 -> 128 -> 512 ms. Detector validated at 1.0000 on non-Conflux
-  controls, and the paper's 65% truncation claim reproduces at 0.659.
-- **Track B, what ownership is worth**:
-  `track-b-conflux/notes/07-fs-value-measured.md`. k-FP classifies 0.744 of
-  first-segment traces correctly against 0.374 of the rest. Advantage buys
-  ownership (x1.97 at 128 ms) far more than it buys accuracy on owned traces
-  (x1.19).
-- **Track B, Shadow validation**:
-  `track-b-conflux/notes/09-shadow-validation.md`. Unpatched tor 0.4.9.11 in
-  Shadow 3.3.0 reproduces the bias from the other direction: two identical
-  guards split a download 0.512, a guard with a 64 ms advantage takes 0.71.
-  Byte share plateaus near 0.78 because LowRTT falls back to the slow leg once
-  the fast leg's cwnd fills. Harness in `track-b-conflux/shadow/`.
+Every headline above, with its full numbers, caveats and the code that produced
+it.
+
+| Result | Write-up | Numbers | Code |
+|---|---|---|---|
+| Five classifiers, both axes | `docs/track-a-robustness-axes.md` | `track-a-robustness/results/axes-table.md` | `track-a-robustness/src/run_torch.py`, `run_kfp.py` |
+| Ours against the paper | same | `track-a-robustness/results/vs-paper.md` | `track-a-robustness/src/compare_to_paper.py` |
+| RF slot-size sweep | same | `track-a-robustness/results/rf-slot-sweep.md` | `track-a-robustness/src/sweep_summary.py` |
+| Ownership vs latency | `track-b-conflux/notes/06-fs-kill-test.md` | `track-b-conflux/results/fs-sweep.json` | `track-b-conflux/src/run_fs_sweep.py` |
+| What ownership is worth | `track-b-conflux/notes/07-fs-value-measured.md` | `track-b-conflux/results/fs-kfp.json` | `track-b-conflux/src/run_fs_kfp.py` |
+| Stock tor in Shadow | `track-b-conflux/notes/09-shadow-validation.md` | `track-b-conflux/results/shadow-sweep.json` | `track-b-conflux/shadow/` |
+| How LowRTT actually picks | `track-b-conflux/notes/01-lowrtt-mechanics.md` | n/a, source reading | `tor.git` at 3937194 |
+
+Every deviation from the authors' published configuration is in
+`track-a-robustness/logs/deltas.md`, one row each, written as it happened.
