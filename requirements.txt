@@ -1,0 +1,12 @@
+# Analysis stack. Pinned to what the results in results/ were produced with.
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.0
+matplotlib==3.11.1
+joblib==1.5.2
+
+# The four CNN classifiers need torch. CPU wheels are enough to run the code;
+# the published numbers came from a 5090 on cu128. See track-a-robustness/
+# RUNBOOK-5090.md before training anything.
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
