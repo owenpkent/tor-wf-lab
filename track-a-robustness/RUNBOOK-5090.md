@@ -37,20 +37,53 @@ The patterns end in `.npz` deliberately, which excludes the `-nga` variants.
 Write the GPU, driver, CUDA and torch versions into `logs/deltas.md` before
 running anything.
 
-## 1. What already exists, reuse it
+## 1. What already exists
 
-- `src/data.py` -> `axis_split("cross-network" | "drift")` returns
-  `(Xtr, Ttr, ytr), {cell: (X, T, y)}, labels`, already restricted to the label
-  intersection for that axis. `X` is int8 direction, `T` float32 seconds, both
-  (n, 5000) zero-padded.
-- `src/run_kfp.py` is the protocol to copy: 20% stratified holdout per seed as
-  the in-distribution anchor, seeds 0/1/2, one JSON row per (axis, cell, seed)
-  with `accuracy`, `f1_macro`, `f1_micro`, `n_train`, `n_test`, `n_classes`.
-  Keep that row schema so the plot script can eat all five classifiers.
-- `results/kfp.json`, `results/kfp-summary.md` are k-FP's finished cells.
+All of it is written and smoke-tested on CPU. The GPU machine should not need to
+write code, only to run it.
 
-Write `src/models.py` (architectures + input transforms) and `src/run_torch.py`
-(mirror of `run_kfp.py`, takes a model name), emitting `results/<model>.json`.
+| File | What it does |
+|---|---|
+| `src/data.py` | `axis_split("cross-network" \| "drift")` returns train, test cells and the label intersection |
+| `src/models.py` | DF, Tik-Tok and RF architectures, input transforms, TAM builder, and `SPECS` holding Table C.1 verbatim |
+| `src/cache_tam.py` | Precomputes the RF TAM cache into `data/cache/`, 763 MB over five files. `data/` is gitignored, so **run this once on the GPU box**: it takes about 10 seconds total and `run_torch.py rf` calls it automatically if the cache is absent |
+| `src/run_torch.py` | The runner. Same 20% holdout protocol and JSON row schema as `run_kfp.py` |
+| `src/plot_axes.py` | The deliverable scatter. Reads every `results/*.json` and names any classifier that has not run |
+| `results/kfp.json` | k-FP already finished, both axes, 3 seeds |
+
+Commands:
+
+```bash
+.venv/bin/python track-a-robustness/src/run_torch.py df
+.venv/bin/python track-a-robustness/src/run_torch.py tiktok
+.venv/bin/python track-a-robustness/src/run_torch.py rf
+.venv/bin/python track-a-robustness/src/run_torch.py rf --tam-slots 300 --tag=-tam300
+.venv/bin/python track-a-robustness/src/run_torch.py rf --tam-slots 150 --tag=-tam150
+.venv/bin/python track-a-robustness/src/plot_axes.py
+```
+
+`--epochs` and `--limit` exist for smoke tests only; never use them for a
+reported number. The TAM cache is stored at the published 1800 slots and
+downsampled exactly for the 300 and 150 slot runs, so the sweep needs no rebuild.
+
+### What the smoke tests established
+
+On CPU, with a subsample and 3 epochs, all three models train, evaluate and
+write results. DF reached 0.417 in-distribution accuracy against 0.0097 chance
+after 3 epochs on 2,400 traces, which is the pipeline working end to end rather
+than a result. One real bug was caught and fixed this way: `RFNet` sized its
+classifier from the default 1800 slots rather than from the input, so the
+slot-size sweep crashed.
+
+Timing on this laptop's CPU, for calibration only: DF is about 21 s per epoch
+per 2,400 traces, so roughly 70 minutes for one full 30-epoch run. If the 5090
+is not at least twenty times faster than that, something is wrong.
+
+### Holmes
+
+Not implemented, on purpose, and `plot_axes.py` will print it under "not run".
+Table C.1 gives it two branches, two optimizers, two batch sizes and an
+unweighted CrossEntropy plus SupConLoss mix. See `logs/deltas.md`.
 
 ## 2. Hyperparameters, thesis Table C.1, do not retune
 
@@ -91,7 +124,7 @@ survives network mismatch, so expect a modest drop, not a collapse. A collapse
 here means the two-axis picture cannot be built from this data and is worth
 reporting on its own.
 
-**Then the rest**, 3 seeds, both axes, all cells: DF, Tik-Tok, RF, Holmes.
+**Then the rest**, 3 seeds, both axes, all cells: DF, Tik-Tok, RF.
 
 **RF deserves a second run.** Its whole story is Appendix C.1: slot size versus
 the roughly 150 ms AU-CA latency delta. Run it at the per-experiment Tmax (45 s,
@@ -101,11 +134,12 @@ authors' own documented sweep, not retuning, but report it as a separate
 sensitivity line and never fold it into the main table. If RF recovers there,
 the "distinct axes" claim is really a statement about one preprocessing constant.
 
-**Holmes last, and it is allowed to fail.** Table C.1 gives it two branches, two
-optimizers and a SupConLoss with no weighting, which is not enough to reimplement
-faithfully. If it cannot be built with confidence, report Holmes as not run. A
-missing point on the scatter plot is honest; an approximated Holmes is a number
-that looks like a measurement and is not one.
+**Holmes is already decided: not run.** Table C.1 gives it two branches, two
+optimizers and a SupConLoss with no weighting, which is not enough to
+reimplement faithfully, so it is deliberately absent from `models.py` and
+`plot_axes.py` prints it under "not run". A missing point on the scatter is
+honest; an approximated Holmes is a number that looks like a measurement and is
+not one. Revisit only if the authors send code.
 
 ## 4. Runtime
 
@@ -118,12 +152,14 @@ those once per collection and cache them.
 
 ## 5. Deliverable
 
-`src/plot_axes.py`: read every `results/*.json`, one point per classifier,
-x = cross-network CA macro F1, y = drift month-6 macro F1, error bars from the
-3 seeds. k-FP's point is already known: **(0.797, 0.487)**.
+`src/plot_axes.py` is written and runs today against `results/kfp.json` alone,
+printing "not run: DF, Tik-Tok, RF, Holmes" and drawing the one point it has. As
+each model finishes, rerun it and the point appears. x is cross-network CA macro
+F1, y is drift month-6 macro F1, error bars are the seed spread, and both axes
+are labelled closed-world in the figure itself, because the plot will outlive the
+caption explaining that it is not the paper's open-world measurement.
 
-Label both axes closed-world macro F1 in the figure itself. These are not the
-paper's open-world numbers and the plot will outlive the caption explaining that.
+k-FP's point is already known: **(0.797, 0.487)**.
 
 Then the verdict paragraph, which has to answer three things:
 

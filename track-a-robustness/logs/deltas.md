@@ -13,6 +13,11 @@ One row per deviation, added as it happens rather than reconstructed at the end.
 | 2026-09-06 | Label space | 112 sites nominal | Per-axis intersection: 103 classes cross-network, 106 drift | Sites disappear between collections. Six (16, 40, 60, 76, 95, 100) are gone from the UK month-6 set, and site 100 is already missing from AU month 0. Scoring against classes that cannot occur would depress recall for a reason unrelated to drift. |
 | 2026-09-06 | Protocol | Train on the month-0 / AU collection, no in-distribution cell reported in the drift table beyond month 0 itself | 20% stratified holdout of the training collection per seed, reported as `in-dist` | Without an anchor, a cross-network or month-6 score is an absolute number rather than a degradation. Costs 20% of the training data, which is a real deviation. |
 | 2026-09-06 | Seeds | Single runs | 3 seeds, sd reported | Required by the brief. |
+| 2026-09-06 | DF architecture | Not published in the thesis, no code released | Reimplemented from Sirinam et al. CCS 2018: four conv blocks, filters 32/64/128/256, kernel 8, max pool 8 stride 4, ELU in block 1 then ReLU, dropouts 0.1 per block and 0.7 / 0.5 in the classifier, two 512 FC layers | Table C.1 pins the optimizer, batch, epochs and input length but not the network. 3.85M parameters. |
+| 2026-09-06 | Tik-Tok validation split | "EarlyStop: val_loss patience=6", no split size given | 10% of the training portion, stratified, per seed, taken from the 80% fit set so the in-distribution anchor stays held out | Early stopping needs a validation set and the table does not size one. |
+| 2026-09-06 | RF architecture | "2D CNN", TAM length 1800 | Reimplemented: four 2D conv blocks over the (2, slots) matrix, first kernel (2,8) collapsing the direction axis, pooling along time only | The weakest of the three reimplementations. Table C.1 gives the input and schedule but only "2D CNN" for the network, and Shen et al.'s exact architecture was not reproduced from the paper. |
+| 2026-09-06 | TAM Tmax | "set dynamically to the highest trace load time, 42-47 s" | 45.0 s, measured: every collection in this repo caps at exactly 45.00 s | Matches their described procedure. At 1800 slots that is a 25 ms slot, finer than the 80 s default's 44 ms, and Appendix C.1 says fine slots are what break RF across networks. |
+| 2026-09-06 | Holmes | Dual-branch CNN, Adam/AdamW, CrossEntropy + SupConLoss, temporal 1000 / TAF 2000 | **Not implemented, will be reported as not run** | Two branches, two optimizers and an unweighted loss mix is not enough to reimplement faithfully. An approximation would produce a number that looks like a measurement. |
 
 ## Matched deliberately, recorded so a later reader does not "fix" them
 
@@ -31,7 +36,11 @@ One row per deviation, added as it happens rather than reconstructed at the end.
 - GPU: none usable. AMD Cezanne integrated only; no CUDA, no ROCm installed,
   and gfx90c is not a supported ROCm target.
 - Python 3.12.3 in `.venv`; numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.0,
-  matplotlib 3.11.1. No torch installed.
+  matplotlib 3.11.1, torch 2.14.0+cpu.
+- The CPU torch here is for verifying that the model code runs, not for
+  producing results. Every CNN number must come from the GPU machine, and
+  `run_torch.py` records `device` and `torch` in its JSON so the two cannot be
+  confused later.
 - Their code: not released. Nothing pulled.
 - Data: 29 `.npz` from `osf.io/9m8ea`, 9.9 GB, all openly downloadable, all 29
   verified against the authors' `pre-sha512sum.txt` / `post-sha512sum.txt`
