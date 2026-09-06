@@ -5,11 +5,11 @@ Check for Tor Website Fingerprinting in the Open World* (arXiv:2603.07412,
 March 2026).
 
 They are independent. Track A aims at an experimental result, Track B aims at a
-go/no-go decision. Neither is started yet.
+go/no-go decision. Track A is under way; Track B has not started.
 
 | Track | Question | Deliverable | Status |
 |---|---|---|---|
-| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Step 1 done, blocked on scope decision |
+| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Data staged and verified, paper numbers confirmed, k-FP done closed-world. Four CNNs waiting on a GPU machine. |
 | B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Not started |
 
 ## Layout
@@ -17,7 +17,8 @@ go/no-go decision. Neither is started yet.
 ```
 prompts/                    the two briefs, verbatim, treated as read-only
 track-a-robustness/
-  src/                      harness around the authors' code
+  src/                      fetch, verify, loaders, classifiers (theirs is unreleased)
+  data/                     OSF traces, gitignored, 9.9 GB
   results/                  numbers tables, the plot
   logs/deltas.md            every difference between their setup and ours
 track-b-conflux/notes/      reading notes feeding the memo
@@ -53,9 +54,12 @@ the PDF.
 | DF under Conflux, guard sees one leg | F1 0.939 -> 0.379 |
 | DF under Conflux, guard with 128ms latency advantage | TPR 0.189 -> 0.736 |
 
-**First task in either track: confirm these against the actual PDF.** The table
-and figure numbers came from the brief, and a transcription error in the premise
-would waste the whole weekend.
+**Confirmed against the PDF on 2026-09-06.** All seven match the thesis exactly,
+with no transcription error in the brief. The thesis numbers the tables
+differently (brief Table 3 = thesis Table 4.1, brief Table 5 = thesis Table 4.3,
+brief Appendix A Table 7 = thesis Appendix C Table C.1). Full check, both tables
+in full, and the hyperparameter table:
+`track-a-robustness/logs/paper-numbers.md`.
 
 ## Ground rules
 
@@ -74,21 +78,46 @@ Both briefs are explicit about these, and they apply to anything committed here:
 
 ## Environment note
 
-Track A's brief assumes a single RTX 5090 on Linux. This repo lives on the
-Windows box; the 5090 is the same card, so the run itself needs WSL2 or the
-Linux install. Whichever gets used, record it in `deltas.md`, along with CUDA
-and torch versions (Blackwell sm_120 needs cu128 or newer wheels).
+Track A's brief assumes a single RTX 5090 on Linux. There are two machines:
 
-## Open items before starting
+- **This one**, `owen-GR9`: Ubuntu 24.04.4 native, Ryzen 9 5900HX (16 threads),
+  30 GB RAM, no CUDA GPU. Integrated AMD graphics only, and gfx90c is not a
+  supported ROCm target, so it is CPU-only in practice.
+- **The Windows box**, which has the 5090. Any run there needs WSL2 or the Linux
+  install, and Blackwell sm_120 needs cu128 or newer wheels.
 
-1. Confirm the paper's table numbers above against the PDF.
+Division of labour that follows from that: staging, verification, k-FP and all
+plotting happen here; DF, Tik-Tok, RF and Holmes are all CNNs (Table C.1) and
+belong on the 5090. Whichever machine a result came from is recorded in
+`deltas.md`, along with CUDA and torch versions.
+
+Local setup on this machine: `.venv` (Python 3.12.3, numpy / scipy / sklearn /
+matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
+
+## Open items
+
+1. ~~Confirm the paper's table numbers against the PDF.~~ Done, all seven exact,
+   see `track-a-robustness/logs/paper-numbers.md`.
 2. ~~Inventory OSF.~~ Done, see `track-a-robustness/logs/osf-inventory.md`.
    Result: ~10.6 GB of monitored traces are open and span AU/CA/UK across month
    0/2/6, but the open-world background set is DUA-gated for one year post
    release and is not even listed. Both axes are runnable closed-world only.
-3. Decide: run both axes closed-world now, or request the DUA and wait. The
-   two-axis question survives closed-world; numeric comparability to their
-   Table 3 and Table 5 does not.
-4. Email the authors about the analysis code. The thesis says it was released;
-   nothing is on OSF and no repo was found. Without it, step 2 becomes a
-   five-classifier reimplementation.
+3. ~~Stage the data.~~ Done. All 29 open `.npz` downloaded, 9.9 GB, all 29
+   verified against the authors' sha512 lists (`src/verify_osf.py`).
+4. **Still open.** Decide: run both axes closed-world now, or request the DUA and
+   wait. The two-axis question survives closed-world; numeric comparability to
+   their Table 4.1 and Table 4.3 does not, and the brief's step-3 sanity gate is
+   unsatisfiable without the background set.
+5. **Still open.** Email the authors about the analysis code. The thesis says it
+   was released; nothing is on OSF, the bulk OSF archive is data only, and no
+   repo was found. Without it, step 2 is a five-classifier reimplementation.
+   Drafts are ready and unsent in `docs/correspondence/`.
+6. **Still open.** The four CNNs need the 5090 machine.
+
+## What has actually run
+
+- k-FP, closed world, both axes, 3 seeds:
+  `track-a-robustness/results/kfp-summary.md`. Cross-network costs it 0.161
+  macro F1 against an in-distribution anchor, six months of drift costs 0.463.
+- Nothing else. No CNN has been trained, and no number here is comparable to a
+  number in the paper.

@@ -1,0 +1,219 @@
+[
+ {
+  "kind": "file",
+  "path": "pre-conflux/pre-month0-cfx0-ca-nga.npz",
+  "size": 379992077,
+  "md5": "7c586410b500bbb50abeb4dbe0f18970",
+  "download": "https://osf.io/download/698f8f53fe99894fbec729eb/"
+ },
+ {
+  "kind": "file",
+  "path": "pre-conflux/pre-month0-cfx0-au-nga.npz",
+  "size": 356431404,
+  "md5": "06d55d790d0cc2d0741a676cf8708f2d",
+  "download": "https://osf.io/download/h7zdq/"
+ },
+ {
+  "kind": "file",
+  "path": "pre-conflux/pre-month0-cfx0-ca.npz",
+  "size": 356793946,
+  "md5": "7054ca3568b99ef9c6de7c814f849ce0",
+  "download": "https://osf.io/download/698a48341e07b4f23be24bd8/"
+ },
+ {
+  "kind": "file",
+  "path": "pre-conflux/pre-sha512sum.txt",
+  "size": 620,
+  "md5": "1046408069912407d46f8f3af8a15cd4",
+  "download": "https://osf.io/download/eh3qp/"
+ },
+ {
+  "kind": "file",
+  "path": "pre-conflux/pre-month0-cfx0-au.npz",
+  "size": 333764018,
+  "md5": "e1f21694b3cab7d8b510a033efc800de",
+  "download": "https://osf.io/download/698a48282b7e8fe5d5dfc405/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx2-uk.npz",
+  "size": 429469063,
+  "md5": "dcc69e23462c28ce5c48d5748fb0a593",
+  "download": "https://osf.io/download/698a74c84dd5ec80c0e25335/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-ca-nga.npz",
+  "size": 455444240,
+  "md5": "45c57df4df37fadfd6ec0c48a0737b64",
+  "download": "https://osf.io/download/698f9024dbbc96e9c6e24bc2/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-au.npz",
+  "size": 265138163,
+  "md5": "df8f7813e184fda96b1e8f74250fffd2",
+  "download": "https://osf.io/download/698a755b4dd5ec80c0e253dd/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca-rtt-032.npz",
+  "size": 224329750,
+  "md5": "c55c39eae73c7d5174e0653c0bed583f",
+  "download": "https://osf.io/download/zd2v5/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-ca.npz",
+  "size": 427269311,
+  "md5": "db0986fbe223ed862e8ad912377d2b8b",
+  "download": "https://osf.io/download/698a79c20d9b8c57addfc4c9/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx2-ca.npz",
+  "size": 271648166,
+  "md5": "038e68418fda2c51d41be33e72ddba1d",
+  "download": "https://osf.io/download/698a74ab1025c89bbbc730c2/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx2-au.npz",
+  "size": 452580570,
+  "md5": "6e9c2d2699523bb9326b334ce6e971f1",
+  "download": "https://osf.io/download/698a7409a98ae75bf7dfca0d/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-uk.npz",
+  "size": 422655685,
+  "md5": "95a2552a88b6b4b17ec737f4f29b692c",
+  "download": "https://osf.io/download/698a73560edec54c48dfcac1/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx0-uk-nga.npz",
+  "size": 436902922,
+  "md5": "9fc56acba615d29ca3e9d5bc0bac36ea",
+  "download": "https://osf.io/download/698f90db4e1e942f50e2532d/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca.npz",
+  "size": 389375371,
+  "md5": "e3dca597d47a95e1c32670dcfd6b9a9f",
+  "download": "https://osf.io/download/698a75822d654156a1dfc402/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-au.npz",
+  "size": 389923610,
+  "md5": "6a45c1df35bc8e674bc4b1e84b6e0213",
+  "download": "https://osf.io/download/698a7968c42d87ef8bdfca0e/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca-rtt-128.npz",
+  "size": 270951640,
+  "md5": "d36bdedcecaf50783a9046389f5ce784",
+  "download": "https://osf.io/download/698a77f67656313e5edfc442/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca-rtt-256.npz",
+  "size": 311284509,
+  "md5": "6428b8b33d3350b8b3f0bde94ede3ec9",
+  "download": "https://osf.io/download/698a7804fe82d21e6ae24f2a/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-uk.npz",
+  "size": 71926302,
+  "md5": "41f52b4da01694b056e2a9ca36ca3ef2",
+  "download": "https://osf.io/download/698a7881875d26a310c72963/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-ca-nga.npz",
+  "size": 443753358,
+  "md5": "965f632ce14b11dad836998282b86b4e",
+  "download": "https://osf.io/download/698f90dbdbbc96e9c6e24bd7/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-ca.npz",
+  "size": 436013295,
+  "md5": "b499deadfebb091cbec22639c2c97beb",
+  "download": "https://osf.io/download/698a72f40b8cdd80a7c72bde/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-au-nga.npz",
+  "size": 405426914,
+  "md5": "8616cf59e34af8ee9c6abf92f02c2ee8",
+  "download": "https://osf.io/download/698f90d4daf473bb54dfc41f/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-uk-nga.npz",
+  "size": 430252427,
+  "md5": "2aff22b658ba5cf52f006517ad0de33b",
+  "download": "https://osf.io/download/698f90da2fd47d7fa1dfc459/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx0-uk.npz",
+  "size": 416987158,
+  "md5": "0e0cf1d3af3371e8fb7ffe934c4b41e7",
+  "download": "https://osf.io/download/698a75882d654156a1dfc404/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-sha512sum.txt",
+  "size": 3918,
+  "md5": "594f59a460d25dafa1e44501e055320e",
+  "download": "https://osf.io/download/p9stv/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-uk-nga.npz",
+  "size": 441923769,
+  "md5": "4f462761211aa6c4dde753ceb13c965e",
+  "download": "https://osf.io/download/698f90234e1e942f50e252d6/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month6-cfx0-uk.npz",
+  "size": 414108679,
+  "md5": "2781cfa6ead8065607daef8874d3ffd5",
+  "download": "https://osf.io/download/698a7a692d654156a1dfc5fb/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-au-nga.npz",
+  "size": 415245710,
+  "md5": "283f5f0427b70fcc800f952039a53593",
+  "download": "https://osf.io/download/r84gy/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca-rtt-064.npz",
+  "size": 235469601,
+  "md5": "0ed814a3fc421aeaf590f84e9b9ff705",
+  "download": "https://osf.io/download/698a77e28d98613a98e24d05/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month2-cfx2-ca-rtt-512.npz",
+  "size": 304489633,
+  "md5": "19d4b05bfd8a1c83d2e011a9e796e929",
+  "download": "https://osf.io/download/698a7802c42d87ef8bdfc9c7/"
+ },
+ {
+  "kind": "file",
+  "path": "post-conflux/post-month0-cfx0-au.npz",
+  "size": 396949863,
+  "md5": "db3934614856c2b7bf106b8db4d562d8",
+  "download": "https://osf.io/download/qx54n/"
+ }
+]

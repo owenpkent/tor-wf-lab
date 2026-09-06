@@ -1,6 +1,7 @@
 # Data: large, and some of it is DUA-gated. Never commit traces.
 data/
 *.npz
+*.zip
 *.pkl
 *.h5
 *.cell
