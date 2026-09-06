@@ -5,11 +5,11 @@ Check for Tor Website Fingerprinting in the Open World* (arXiv:2603.07412,
 March 2026).
 
 They are independent. Track A aims at an experimental result, Track B aims at a
-go/no-go decision. Track A is under way; Track B's scoping is finished.
+go/no-go decision. Both are now done.
 
 | Track | Question | Deliverable | Status |
 |---|---|---|---|
-| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Data staged and verified, paper numbers confirmed, k-FP done closed-world. Four CNNs waiting on a GPU machine. |
+| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Done. All five classifiers, both axes, 3 seeds, closed world, on the 5090. Verdict: no classifier is good at both, but the independence claim rests on RF. `docs/track-a-robustness-axes.md` |
 | B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Done, and the kill test passed. Verdict: go, narrowed. `docs/track-b-memo.md` |
 
 ## Layout
@@ -86,10 +86,12 @@ Track A's brief assumes a single RTX 5090 on Linux. There are two machines:
 - **The Windows box**, which has the 5090. Any run there needs WSL2 or the Linux
   install, and Blackwell sm_120 needs cu128 or newer wheels.
 
-Division of labour that follows from that: staging, verification, k-FP and all
-plotting happen here; DF, Tik-Tok, RF and Holmes are all CNNs (Table C.1) and
-belong on the 5090. Whichever machine a result came from is recorded in
-`deltas.md`, along with CUDA and torch versions.
+Division of labour that followed from that: staging, verification and k-FP on the
+laptop; DF, Tik-Tok, RF and Holmes, all CNNs (Table C.1), on the 5090. The 5090
+box turned out to have no WSL, so those ran on native Windows Python with
+torch 2.11.0+cu128; capability `(12, 0)` and `sm_120` were confirmed before any
+training. Whichever machine a result came from is recorded in `deltas.md`, along
+with CUDA and torch versions.
 
 Local setup on this machine: `.venv` (Python 3.12.3, numpy / scipy / sklearn /
 matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
@@ -104,23 +106,32 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
    release and is not even listed. Both axes are runnable closed-world only.
 3. ~~Stage the data.~~ Done. All 29 open `.npz` downloaded, 9.9 GB, all 29
    verified against the authors' sha512 lists (`src/verify_osf.py`).
-4. **Still open.** Decide: run both axes closed-world now, or request the DUA and
-   wait. The two-axis question survives closed-world; numeric comparability to
-   their Table 4.1 and Table 4.3 does not, and the brief's step-3 sanity gate is
-   unsatisfiable without the background set.
-5. **Still open.** Email the authors about the analysis code. The thesis says it
-   was released; nothing is on OSF, the bulk OSF archive is data only, and no
-   repo was found. Without it, step 2 is a five-classifier reimplementation.
-   Drafts are ready and unsent in `docs/correspondence/`.
-6. **Still open.** The four CNNs need the 5090 machine.
+4. ~~Decide: closed-world now, or request the DUA and wait.~~ Resolved by running
+   it. Closed-world was the right call: the **rank ordering on both axes is
+   reproduced exactly** (Spearman 1.000 against the published tables), so the
+   two-axis question is answerable, even though cell values are not comparable
+   and step 3 stays unsatisfiable. See `results/vs-paper.md`.
+5. **Still open, but less costly than it looked.** The thesis authors' own code is
+   still missing and the draft email in `docs/correspondence/` is unsent. But the
+   *original* classifier authors did release theirs, so RF and Holmes are
+   transcriptions of `robust-fingerprinting/RF` and WFlib rather than guesses.
+   Only DF, Tik-Tok and k-FP are reimplemented from paper text.
+6. ~~The four CNNs need the 5090 machine.~~ Done, and Holmes ran too, making five
+   classifiers rather than four. See `docs/track-a-robustness-axes.md`.
 
 ## What has actually run
 
-- **Track A, k-FP**, closed world, both axes, 3 seeds:
-  `track-a-robustness/results/kfp-summary.md`. Cross-network costs it 0.161
-  macro F1 against an in-distribution anchor, six months of drift costs 0.463.
-  No CNN has been trained, and no number there is comparable to a number in the
-  paper.
+- **Track A, all five classifiers**, closed world, both axes, 3 seeds:
+  `docs/track-a-robustness-axes.md`, numbers in
+  `track-a-robustness/results/axes-table.md`, figure `results/axes.png`.
+  No classifier is good at both axes. DF is best across networks (0.968) and
+  loses 0.331 to six-month drift; RF is best on drift (0.748) and loses 0.250
+  across networks. RF is the only classifier that inverts, fourth of five on
+  network mismatch and first on drift, so the "distinct axes" claim rests on it.
+  The authors' own slot-size remedy does not reproduce closed-world and makes RF
+  worse on both axes (`results/rf-slot-sweep.md`). No cell value here is
+  comparable to a number in the paper, but the rank ordering on both axes is
+  identical to theirs.
 - **Track B, first-segment sweep**: `track-b-conflux/notes/06-fs-kill-test.md`.
   A guard's first-segment ownership goes 0.448 -> 0.891 -> 0.977 as its latency
   advantage goes 0 -> 128 -> 512 ms. Detector validated at 1.0000 on non-Conflux

@@ -1,5 +1,13 @@
 # Track A on the 5090 machine
 
+> **Status: this run is complete.** All five classifiers ran on the 5090 on
+> 2026-09-06, including Holmes, which this runbook previously said to skip. The
+> numbers are in `results/axes-table.md`, `results/vs-paper.md` and
+> `results/rf-slot-sweep.md`; the figure is `results/axes.png`. Sections below
+> have been corrected where they described the CPU-prep code rather than what
+> actually ran. Every correction is in `logs/deltas.md`.
+
+
 Everything CPU-shaped is done: data staged and verified, paper numbers checked,
 k-FP run on both axes. What is left is the four CNNs, and they are the whole
 reason the brief asked for a GPU. Work top to bottom, and stop at a failed gate
@@ -46,7 +54,9 @@ write code, only to run it.
 |---|---|
 | `src/data.py` | `axis_split("cross-network" \| "drift")` returns train, test cells and the label intersection |
 | `src/models.py` | DF, Tik-Tok and RF architectures, input transforms, TAM builder, and `SPECS` holding Table C.1 verbatim |
-| `src/cache_tam.py` | Precomputes the RF TAM cache into `data/cache/`, 763 MB over five files. `data/` is gitignored, so **run this once on the GPU box**: it takes about 10 seconds total and `run_torch.py rf` calls it automatically if the cache is absent |
+| `src/cache_tam.py` | **Superseded, do not run.** Its downsampling shortcut is invalid under the corrected TAM binning, and the TAM builds in about 5 s anyway. See the file header |
+| `src/holmes.py`, `src/run_holmes.py` | Holmes: network, TAF and temporal features, and the four-stage pipeline |
+| `src/compare_to_paper.py` | Puts our closed-world cells beside the thesis's open-world ones |
 | `src/run_torch.py` | The runner. Same 20% holdout protocol and JSON row schema as `run_kfp.py` |
 | `src/plot_axes.py` | The deliverable scatter. Reads every `results/*.json` and names any classifier that has not run |
 | `results/kfp.json` | k-FP already finished, both axes, 3 seeds |
@@ -54,36 +64,56 @@ write code, only to run it.
 Commands:
 
 ```bash
-.venv/bin/python track-a-robustness/src/run_torch.py df
-.venv/bin/python track-a-robustness/src/run_torch.py tiktok
-.venv/bin/python track-a-robustness/src/run_torch.py rf
-.venv/bin/python track-a-robustness/src/run_torch.py rf --tam-slots 300 --tag=-tam300
-.venv/bin/python track-a-robustness/src/run_torch.py rf --tam-slots 150 --tag=-tam150
-.venv/bin/python track-a-robustness/src/plot_axes.py
+python track-a-robustness/src/run_torch.py df
+python track-a-robustness/src/run_torch.py tiktok
+python track-a-robustness/src/run_torch.py rf
+python track-a-robustness/src/run_torch.py rf --seeds 3 --axes cross-network --slots 300 --tag rf-n300
+python track-a-robustness/src/run_torch.py rf --seeds 3 --axes cross-network --slots 150 --tag rf-n150
+python track-a-robustness/src/run_holmes.py --seeds 3
+python track-a-robustness/src/plot_axes.py
+python track-a-robustness/src/compare_to_paper.py
 ```
 
-`--epochs` and `--limit` exist for smoke tests only; never use them for a
-reported number. The TAM cache is stored at the published 1800 slots and
-downsampled exactly for the 300 and 150 slot runs, so the sweep needs no rebuild.
+The sweep rebuilds the TAM per slot setting, which takes about 5 s and is
+required: under the authors' `(N-1)` binning the 1800-slot matrix does not
+aggregate exactly into 300 or 150. `--cells in-dist` restricts evaluation and is
+how the gates below were run.
 
-### What the smoke tests established
+### What actually ran, 2026-09-06
 
-On CPU, with a subsample and 3 epochs, all three models train, evaluate and
-write results. DF reached 0.417 in-distribution accuracy against 0.0097 chance
-after 3 epochs on 2,400 traces, which is the pipeline working end to end rather
-than a result. One real bug was caught and fixed this way: `RFNet` sized its
-classifier from the default 1800 slots rather than from the input, so the
-slot-size sweep crashed.
+Both gates passed. DF in-distribution 0.9786 against a 0.95 bar; DF
+cross-network CA 0.9675, a drop of 0.008, so no collapse. Training is about 45 s
+per run, not the single-digit minutes this runbook estimated, because every
+input tensor is resident on the GPU for the whole run.
 
-Timing on this laptop's CPU, for calibration only: DF is about 21 s per epoch
-per 2,400 traces, so roughly 70 minutes for one full 30-epoch run. If the 5090
-is not at least twenty times faster than that, something is wrong.
+Two corrections to the CPU-prep code were needed before the numbers meant
+anything, both in `logs/deltas.md`:
+
+- **DF pooling.** Keras `same` pooling is asymmetric; a symmetric `padding=2`
+  flattens to 4,864 instead of the paper's 5,120.
+- **RF architecture.** The prep version was an approximation. The RF authors
+  released their code, so it is now transcribed from `robust-fingerprinting/RF`,
+  including a channel-mixing reshape and a BatchNorm+ReLU before the pooled
+  logits. It has no fully connected layer and is slot-agnostic.
 
 ### Holmes
 
-Not implemented, on purpose, and `plot_axes.py` will print it under "not run".
-Table C.1 gives it two branches, two optimizers, two batch sizes and an
-unweighted CrossEntropy plus SupConLoss mix. See `logs/deltas.md`.
+**Implemented and run**, reversing the earlier decision. The reason for skipping
+it was that Table C.1 is too thin to reimplement faithfully. That is true of the
+table and false of the situation: the authors released their complete code as
+WFlib (`FIND-Lab/Website-Fingerprinting-Library`, branch `master`), so nothing
+had to be guessed.
+
+Table C.1's Holmes column is also misleading. It is not one dual-branch network;
+the slash-separated pairs are two *separate models* in a four-stage pipeline:
+an auxiliary CNN on a 1000-bin temporal feature (CrossEntropy, Adam, batch 200)
+used only to compute DeepLiftShap attributions, which drive a per-class
+truncation augmentation, and then the Holmes encoder on TAF (SupConLoss, AdamW,
+batch 256), which emits a 128-d embedding with no classifier head and needs a
+centroid-and-radius calibration step to predict at all.
+
+Both feature extractors were verified against literal transcriptions of the
+authors' own loops on real traces, max absolute difference 0.0.
 
 ## 2. Hyperparameters, thesis Table C.1, do not retune
 
@@ -124,7 +154,7 @@ survives network mismatch, so expect a modest drop, not a collapse. A collapse
 here means the two-axis picture cannot be built from this data and is worth
 reporting on its own.
 
-**Then the rest**, 3 seeds, both axes, all cells: DF, Tik-Tok, RF.
+**Then the rest**, 3 seeds, both axes, all cells: DF, Tik-Tok, RF, Holmes.
 
 **RF deserves a second run.** Its whole story is Appendix C.1: slot size versus
 the roughly 150 ms AU-CA latency delta. Run it at the per-experiment Tmax (45 s,
@@ -134,12 +164,12 @@ authors' own documented sweep, not retuning, but report it as a separate
 sensitivity line and never fold it into the main table. If RF recovers there,
 the "distinct axes" claim is really a statement about one preprocessing constant.
 
-**Holmes is already decided: not run.** Table C.1 gives it two branches, two
-optimizers and a SupConLoss with no weighting, which is not enough to
-reimplement faithfully, so it is deliberately absent from `models.py` and
-`plot_axes.py` prints it under "not run". A missing point on the scatter is
-honest; an approximated Holmes is a number that looks like a measurement and is
-not one. Revisit only if the authors send code.
+**Holmes ran, and was gated like DF.** The "not run" decision was reversed once
+the authors' released code was found (see section 1). It was held to the same
+bar DF was: in-distribution macro F1 had to clear 0.95 before any cross-network
+or drift number would be reported. It reached 0.9588, so the numbers are real
+measurements rather than an approximation, and the point is on the scatter.
+Had it missed that bar it would have been reported as not run.
 
 ## 4. Runtime
 
