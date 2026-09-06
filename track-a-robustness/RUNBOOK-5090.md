@@ -53,13 +53,13 @@ write code, only to run it.
 | File | What it does |
 |---|---|
 | `src/data.py` | `axis_split("cross-network" \| "drift")` returns train, test cells and the label intersection |
-| `src/models.py` | DF, Tik-Tok and RF architectures, input transforms, TAM builder, and `SPECS` holding Table C.1 verbatim |
-| `src/cache_tam.py` | **Superseded, do not run.** Its downsampling shortcut is invalid under the corrected TAM binning, and the TAM builds in about 5 s anyway. See the file header |
+| `src/models.py` | DF/Tik-Tok and RF architectures, the input transforms and the TAM builder. Table C.1 lives in `run_torch.py`'s `CONFIG` |
 | `src/holmes.py`, `src/run_holmes.py` | Holmes: network, TAF and temporal features, and the four-stage pipeline |
 | `src/compare_to_paper.py` | Puts our closed-world cells beside the thesis's open-world ones |
 | `src/run_torch.py` | The runner. Same 20% holdout protocol and JSON row schema as `run_kfp.py` |
-| `src/plot_axes.py` | The deliverable scatter. Reads every `results/*.json` and names any classifier that has not run |
-| `results/kfp.json` | k-FP already finished, both axes, 3 seeds |
+| `src/plot_axes.py` | The deliverable scatter plus `results/axes-table.md`. Reads every `results/*.json`, marks missing cells "not run", and excludes the `rf-n*` sweeps |
+| `src/sweep_summary.py` | Writes `results/rf-slot-sweep.md` from the four sweep runs |
+| `results/kfp.json` | k-FP, both axes, 3 seeds, run earlier on the laptop |
 
 Commands:
 
@@ -171,31 +171,61 @@ or drift number would be reported. It reached 0.9588, so the numbers are real
 measurements rather than an approximation, and the point is on the scatter.
 Had it missed that bar it would have been reported as not run.
 
-## 4. Runtime
+## 4. Runtime, as measured
 
-The whole grid is small by GPU standards: about 17k training traces of 5000
-cells, 103 to 106 classes, 30 epochs. On a 5090 expect single-digit minutes per
-training run, so 4 models x 3 seeds x 2 axes lands in roughly one to two hours
-including data loading. If a single run is taking an hour, something is on the
-CPU that should not be, most likely the TAM or TAF construction. Precompute
-those once per collection and cache them.
+About 2 hours of GPU time for the whole grid, five classifiers x 3 seeds x 2
+axes, plus the four sweep runs.
 
-## 5. Deliverable
+| Classifier | Per training run | Note |
+|---|---|---|
+| DF | 40-47 s | 30 epochs |
+| Tik-Tok | 47-86 s | batch 32, so 4x the steps; early stopping usually fires at 24-30 |
+| RF | 41-42 s | |
+| Holmes | ~7.6 min per seed-axis | four stages, and a kNN monitor that re-embeds the memory bank every epoch |
 
-`src/plot_axes.py` is written and runs today against `results/kfp.json` alone,
-printing "not run: DF, Tik-Tok, RF, Holmes" and drawing the one point it has. As
-each model finishes, rerun it and the point appears. x is cross-network CA macro
-F1, y is drift month-6 macro F1, error bars are the seed spread, and both axes
-are labelled closed-world in the figure itself, because the plot will outlive the
-caption explaining that it is not the paper's open-world measurement.
+The original estimate of single-digit minutes per run was pessimistic for the
+three single-stage models and optimistic for Holmes.
 
-k-FP's point is already known: **(0.797, 0.487)**.
+The thing that makes this fast is keeping every input tensor resident on the GPU
+for the whole run rather than streaming batches from host memory; the largest
+axis needs about 3.4 GiB. Feature construction is built once per collection per
+run and held in memory, never per seed: the TAM takes about 5 s per collection
+and the TAF about 11 s for the 42k augmented traces. No disk cache is used or
+needed. If a single run is taking an hour, something is on the CPU that should
+not be.
 
-Then the verdict paragraph, which has to answer three things:
+## 5. Deliverable, done
 
-1. Do classifiers actually trade places across the two axes, or do they simply
-   rank the same on both?
-2. Does the RF slot-size sweep explain its cross-network position away?
-3. What does closed-world scoring cost the comparison? k-FP's cross-network cell
-   moved 0.430 -> 0.797 when the background set disappeared, so the gap between
-   the two worlds is larger than most of the gaps being compared.
+`src/plot_axes.py` reads every `results/*.json` and draws one point per
+classifier, x = cross-network CA macro F1, y = drift month-6 macro F1, error
+bars from the 3 seeds. Both axes are labelled closed-world in the figure itself,
+because the plot will outlive the caption explaining that it is not the paper's
+open-world measurement. Sweep files (`rf-n*.json`) are excluded from the plot
+unless `--include-sweeps` is passed.
+
+Output: `results/axes.png`, `results/axes-table.md`, `results/vs-paper.md`,
+`results/rf-slot-sweep.md`. The verdict is `docs/track-a-robustness-axes.md`.
+
+The three questions the verdict had to answer, and where they landed:
+
+1. **Do classifiers trade places, or rank the same on both?** They trade places,
+   but it rests on RF, which goes fourth of five on network mismatch to first on
+   drift, and on k-FP, which slides third to fifth. The other three shift by one
+   place. Rank correlation between the axes is 0.20, indistinguishable from
+   chance at n = 5, so it is reported as descriptive. The weaker claim, that no
+   classifier is good at both, holds cleanly: the smallest worst-case
+   degradation is RF's -0.250 and three of five exceed -0.35.
+2. **Does the RF slot-size sweep explain its cross-network position away?** No.
+   Widening the slot makes RF monotonically worse, not better. A drift arm was
+   added as a control, which the thesis does not report, and coarsening damages
+   both axes by a similar margin, so slot size is general information loss
+   rather than a network-mismatch knob.
+3. **What does closed-world scoring cost?** The magnitudes entirely and the
+   ordering not at all. Cross-network cells sit 0.318 from the published values
+   on average, RF by +0.672, but the rank ordering is reproduced exactly on both
+   axes (Spearman 1.000). Since the hypothesis is a claim about ordering it is
+   testable closed-world, though this still does not satisfy the brief's step-3
+   gate: the drift agreement is corroboration, not reproduction.
+
+k-FP's point, known before the GPU work started, was **(0.797, 0.487)** and is
+unchanged.

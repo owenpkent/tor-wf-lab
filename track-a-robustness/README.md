@@ -1,22 +1,56 @@
 # Track A: robustness axes
 
-Brief: `../prompts/prompt-a-robustness-axes.md`.
+Brief: `../prompts/prompt-a-robustness-axes.md`. Verdict:
+`../docs/track-a-robustness-axes.md`.
 
 Hypothesis under test: network-mismatch robustness and temporal-drift
 robustness are distinct properties, and no current WF classifier has both.
-Classifiers in scope: k-FP, DF, Tik-Tok, RF, Holmes.
+Classifiers in scope: k-FP, DF, Tik-Tok, RF, Holmes. All five ran.
 
-Gate order, from the brief. Do not skip ahead of a failed gate.
+**Outcome.** No classifier is good at both axes, so the hypothesis holds in its
+weaker form. The stronger claim, that the axes are independent properties, rests
+almost entirely on RF: it is fourth of five against network mismatch and first
+against drift, and the only classifier hurt more by changing country than by
+ageing six months.
 
-1. **OSF inventory.** Report open vs DUA-gated before running anything. If the
-   open synthetic traces cannot support both axes, say so and propose the
-   closest feasible substitute.
-2. **Their code running**, published hyperparameters only (Appendix A Table 7).
-3. **Reproduce one paper number** as a sanity check. Name which one and how
-   close. Not within a few points means stop and report.
-4. **Both axes, 3+ seeds**, variance reported.
-5. **One scatter plot**: cross-network F1 against six-month (or longest
-   available gap) F1, one point per classifier, error bars.
+## Gate order, from the brief, and where each landed
 
-Steps 1 and 3 are the real gates. Most of the ways this weekend goes wrong are
-discovering at step 4 that the data never supported the question.
+1. **OSF inventory.** Done. ~10.6 GB of monitored traces are open and span
+   AU/CA/UK across months 0/2/6; the open-world background set is DUA-gated and
+   not even listed. Both axes are runnable closed-world only.
+   `logs/osf-inventory.md`.
+2. **Their code running, published hyperparameters only.** Partly unsatisfiable.
+   The thesis authors released nothing, so this is a five-classifier
+   reimplementation. Hyperparameters are Table C.1 verbatim and untuned.
+   Architectures come from each classifier's own paper, and where those authors
+   released code it was transcribed rather than reconstructed: RF from
+   `robust-fingerprinting/RF`, Holmes from WFlib.
+3. **Reproduce one paper number.** **Not satisfied, and cannot be on open data.**
+   Every number here is closed-world macro F1; every number in their tables is
+   open-world F1 from a tuned threshold against the background set. Different
+   measurements. The drift column nonetheless lands within 0.008 of the
+   published month-2 values, and the rank ordering on both axes matches theirs
+   exactly, but that is corroboration and must not be quoted as reproduction.
+   `results/vs-paper.md`.
+4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 105 result rows.
+   `results/axes-table.md`. Seed variance is not uniform: RF's cross-network
+   cell has sd 0.0217 against DF's 0.0021 on the same cell.
+5. **One scatter plot.** Done, `results/axes.png`, five points with error bars,
+   both axes labelled closed-world in the figure itself.
+
+Steps 1 and 3 were the real gates, and step 3 is the one that failed. It failed
+in the way step 1 predicted it would, which is why the run proceeded: the
+two-axis question is a claim about ordering, and ordering survives closed-world
+scoring even though the cell values do not.
+
+## Layout
+
+```
+src/     fetch and verify, loaders, the five classifiers, the runners, the plot
+data/    OSF traces, gitignored
+results/ per-classifier JSON, the generated tables, the figure
+logs/    deltas.md (every deviation), paper-numbers.md, osf-inventory.md
+RUNBOOK-5090.md   what was run on the GPU box, and what it cost
+```
+
+Commands for every result are in `RUNBOOK-5090.md` section 1.
