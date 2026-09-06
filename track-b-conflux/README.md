@@ -22,29 +22,53 @@ them in the brief's order in the memo regardless.
 
 Notes go in `notes/`, one file per question.
 
-## Status, 2026-09-06
+## Status: done, verdict go
 
-All five questions answered. Memo written: `../docs/track-b-memo.md`.
+Memo: `../docs/track-b-memo.md`. All five brief questions answered, and three
+measurements the brief did not ask for but which the answers rested on.
 
-**Verdict: go**, on a narrowed project, conditional on a one-day kill test and
-on asking the authors what they are already doing.
+**Verdict: go**, narrowed to de-biasing which leg carries the start of a page
+load, conditional on asking the authors whether they are already doing it
+(`../docs/correspondence/03-combined-request.md`, unsent).
 
-- Q2 did not kill it. Bounded reordering is already demonstrated inside Tor's
-  own tree by `CONFLUX_ALG_CWNDRTT`, which turns out to be unreachable dead
-  code, and only the first segment of a load needs de-biasing.
-- Q5 did not kill it either, but it found the real risk: the paper's conclusion
-  names this project as its own future work.
-- The kill test is done, same day, and it passed: FS rate 0.448 with no
-  advantage, 0.891 at 128 ms, 0.977 at 512 ms, detector validated at 1.0000 on
-  single-leg control traces. See `notes/06-fs-kill-test.md` and
-  `results/fs-rate.png`.
-- A follow-up measured what ownership is worth instead of inferring it
-  (`notes/07-fs-value-measured.md`): k-FP gets 0.744 of first-segment traces
-  right against 0.374 of the rest, and 128 ms of advantage multiplies ownership
-  by 1.97 but per-trace accuracy on owned traces by only 1.19. Ownership is the
-  attack.
-- Shadow is built here and the validation ran: unpatched tor 0.4.9.11 splits a
-  download 0.512 between two identical guards and 0.71 to a guard with a 64 ms
-  advantage (`notes/09-shadow-validation.md`). Harness in `shadow/`.
-- Next action is the authors question in `../docs/correspondence/01`, then
-  candidate B: make `CONFLUX_ALG_CWNDRTT` reachable and rerun the same sweep.
+## What is here
+
+```
+notes/01-lowrtt-mechanics.md      Q1. How LowRTT picks the primary leg, with file:line
+notes/02-crux-hol-tradeoff.md     Q2. The crux. Survives: reorder can be bounded
+notes/03-candidate-policies.md    Q3. Three policies and the tradeoff each makes
+notes/04-shadow-evaluation.md     Q4. What a Shadow experiment would need
+notes/05-prior-art.md             Q5. Unclaimed, but the authors named it as their future work
+notes/06-fs-kill-test.md          Mechanism confirmed on open traces
+notes/07-fs-value-measured.md     What ownership is worth, measured not inferred
+notes/08-shadow-feasibility.md    Shadow builds and runs on this machine
+notes/09-shadow-validation.md     Stock tor reproduces the bias in simulation
+src/                              FS detector, the two trace measurements, plots
+shadow/                           experiment generator, pcap analysis, the sweep
+results/                          JSON and figures for all three measurements
+```
+
+## The three measurements, in one place
+
+| | Result |
+|---|---|
+| Ownership vs latency (real traces) | 0.448 with no advantage, 0.891 at 128 ms, 0.977 at 512 ms. Detector validated at 1.0000 on single-leg controls |
+| What ownership is worth (real traces) | k-FP gets 0.744 of first-segment traces right against 0.374 of the rest. Advantage buys ownership x1.97, accuracy on owned traces only x1.19 |
+| Stock tor in Shadow | Two identical guards split a download 0.512; a 64 ms advantage takes 0.71. Byte share plateaus near 0.78, LowRTT's cwnd fallback |
+
+Ownership and byte share are different quantities and saturate differently, at
+0.977 and 0.78. They are not interchangeable numbers.
+
+## Reproducing
+
+`src/` runs against the OSF traces staged for Track A, no GPU needed. `shadow/`
+needs Shadow, tgen and tor 0.4.8+ on PATH, and `SHADOW_TOR_EXAMPLE` pointing at
+a Shadow checkout's `examples/docs/tor`. A 30-simulated-minute run takes about
+7 seconds; the 60-run sweep took under ten minutes.
+
+## Next, if the project goes ahead
+
+Candidate A (randomise the initial leg) as the shippable change, candidate B
+(CWNDRTT over the first segment) to get below Conflux's residual leak, then the
+same Shadow sweep against the patched tor: the difference is the defense's
+effect and tgen's stream timings are the time-to-first-byte cost, from one run.
