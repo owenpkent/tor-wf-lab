@@ -62,15 +62,18 @@ part of your Conflux result without the restricted set.
 
 Best regards,
 Owen Kent
-[affiliation, or "independent researcher, unaffiliated"]
+Independent researcher, unaffiliated
 
 ---
 
 ## Notes before sending
 
-- **Still exactly one field to fill:** the affiliation line. Be honest on it.
-  The stated bar is academic research approval, and overstating an affiliation
-  to clear it would poison the result and is not worth a dataset.
+- **Nothing left to fill. Paste and send.** The affiliation line reads
+  "Independent researcher, unaffiliated", chosen 2026-09-06. The stated bar is
+  academic research approval, so this may not clear it; the email invites a fast
+  no on purpose, and a quick refusal is worth more than a slow maybe. Overstating
+  an affiliation to clear the bar would poison the result and is not worth a
+  dataset.
 - **Why one email now.** The OSF route in draft 2 does not exist: the API
   reports `access_requests_enabled: true`, but the node is public with zero
   child components, so there is nothing for the button to attach to. Email is
