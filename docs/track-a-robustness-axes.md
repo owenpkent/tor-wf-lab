@@ -17,6 +17,10 @@ things. DF is the strongest against network mismatch (0.968) and gives up 0.331
 to six months of drift. RF is the strongest against drift (0.748) and gives up
 0.250 across networks. Nothing sits in the top-right of the scatter.
 
+Section 4 qualifies this substantially: the network axis as the thesis measures
+it is a single country pair, and it is the hardest of the four available, for
+every classifier.
+
 **The stronger claim, that the two axes are genuinely independent properties, is
 carried almost entirely by RF.** Three of the five classifiers rank identically
 on both axes (DF > Tik-Tok, with k-FP below them). RF is the one that inverts,
@@ -173,6 +177,65 @@ It does not, however, satisfy the brief's step-3 gate. Nothing here is the same
 measurement as anything in the thesis's tables, so the drift agreement is
 corroboration, not reproduction, and should never be quoted as the latter.
 
+## 4. Is the network axis measuring a classifier, or one country pair?
+
+Added after the fact, and it is the largest qualification in this document.
+Full detail in `track-a-robustness/results/netpairs/summary.md`.
+
+The thesis measures network-mismatch robustness at exactly one point, train AU
+test CA. Post-Conflux month 0 is the only collection where AU, CA and UK were
+gathered together, which allows four ordered pairs from two training vantages.
+All five classifiers, 3 seeds. Degradation from each axis's own anchor:
+
+| Classifier | AU->CA | AU->UK | UK->AU | UK->CA |
+|---|---|---|---|---|
+| DF | −0.070 | −0.011 | −0.010 | −0.052 |
+| Tik-Tok | −0.106 | −0.025 | −0.015 | −0.057 |
+| k-FP | −0.252 | −0.099 | −0.044 | −0.105 |
+| RF | −0.269 | −0.059 | −0.026 | −0.074 |
+| Holmes | −0.425 | −0.229 | −0.078 | −0.080 |
+
+Two things follow, and both cut against the strong reading of the main result.
+
+**RF's cross-network collapse is largely specific to AU->CA.** It loses 0.269
+there and between 0.026 and 0.074 on the other three pairs, where it is ahead of
+k-FP and within a few points of Tik-Tok. That is not the profile of a classifier
+that cannot cross networks. RF is second or third worst on every pair and never
+the worst, so the dramatic version of the claim rests on the one pair the thesis
+reports.
+
+**The training vantage matters roughly three times more than the pair.**
+Averaging each classifier's two test cells per vantage, every classifier
+degrades more trained on AU than trained on UK, by 1.3x (DF) to 4.2x (Holmes)
+and 2.9x on the mean. And AU->CA is the hardest of the four cells for all five
+classifiers, unanimously. The thesis's headline cross-network number is
+therefore measured at the most pessimistic of the four available configurations,
+for every classifier tested.
+
+Median page load time is 15.97 s on AU against 11.99 s on CA and 12.05 s on UK,
+so CA and UK are near-identical and AU is about a third slower. Training on the
+outlier vantage learns a timing distribution that matches neither of the others,
+while training on UK transfers both ways. The asymmetry fits: training on AU and
+testing elsewhere is expensive, testing on AU from elsewhere is cheap. That is a
+mechanism consistent with the data rather than a demonstrated cause; three
+vantages cannot separate load time from everything else that differs between
+countries, and the released traces do not record RTT.
+
+**What survives.** RF is still the only classifier whose drift robustness beats
+its network robustness, on every pair, so the qualitative trade-off that carries
+the two-axis claim is not an artefact of pair choice. What does not survive is
+the magnitude. A large part of what the thesis attributes to network-mismatch
+robustness is carried by the choice of training vantage, which is a property of
+the measurement setup and not of the classifier.
+
+**A confound this exposes in the main result.** The two axes in the main table
+are not measured from the same vantage: the cross-network axis trains on AU and
+the drift axis trains on UK, following the thesis's own Table 4.1 and Table 4.3.
+Given that AU-trained models degrade about 2.9x more in general, the network
+axis is measured under a handicap the drift axis does not carry. Some of the
+apparent distinctness of the two axes could be a vantage effect rather than an
+axis effect, and nothing in this run separates the two.
+
 ## What would change this answer
 
 - **The open-world background set.** Every caveat above traces to its absence.
@@ -182,9 +245,13 @@ corroboration, not reproduction, and should never be quoted as the latter.
   sample size; it is the absence of evidence for dependence.
 - **RF's seed variance.** At sd 0.0217 on the cell that carries the argument,
   three seeds is thin. Ten would be cheap, about 7 minutes.
-- **A second network pair.** The cross-network axis is one AU→CA comparison. Its
-  ~150 ms latency delta is a single point in a space the thesis treats as
-  representative.
+- ~~**A second network pair.**~~ Done, see section 4, and it mattered more than
+  expected: the training vantage carries about 3x more of the effect than the
+  pair does.
+- **Both axes from one vantage.** The largest open confound. The network axis
+  trains on AU and the drift axis on UK, so vantage and axis are entangled. The
+  archive holds `post-month6-cfx0-au`, which would allow an AU-trained drift
+  cell and a genuinely like-for-like scatter. About an hour.
 
 ## Reproducing
 
@@ -201,6 +268,12 @@ python track-a-robustness/src/run_holmes.py --seeds 3
 python track-a-robustness/src/plot_axes.py
 python track-a-robustness/src/compare_to_paper.py
 python track-a-robustness/src/sweep_summary.py
+# the four-pair comparison in section 4
+for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 3 \
+  --axes cross-network-post-au cross-network-post-uk --tag netpairs/$m; done
+python track-a-robustness/src/run_kfp.py 3 --axes cross-network-post-au cross-network-post-uk --tag netpairs/kfp
+python track-a-robustness/src/run_holmes.py --seeds 3 --axes cross-network-post-au cross-network-post-uk --tag netpairs/holmes
+python track-a-robustness/src/netpair_summary.py
 ```
 
 About 2 hours of GPU time end to end, dominated by Holmes at roughly 7.6 minutes

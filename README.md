@@ -74,6 +74,14 @@ mismatch and first against drift. Two are hurt more by changing country than by
 ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504 against
 −0.403); the other three lose far more to drift.
 
+**And the network axis is one country pair.** The thesis measures
+network-mismatch robustness at a single point, train AU test CA. Across the four
+ordered pairs the post-Conflux collections allow, that cell is the hardest of the
+four for all five classifiers, unanimously, and the training vantage carries
+about 2.9x more of the effect than the pair does. RF's collapse is largely
+specific to it: 0.269 there against 0.026 to 0.074 on the other three.
+`track-a-robustness/results/netpairs/summary.md`.
+
 **What this run cannot claim.** The open-world background set is behind a data
 use agreement, so every number here is closed-world macro F1 and every number in
 the paper is open-world F1 at a tuned threshold. Different measurements. The
@@ -250,6 +258,7 @@ it.
 | Five classifiers, both axes | `docs/track-a-robustness-axes.md` | `track-a-robustness/results/axes-table.md` | `track-a-robustness/src/run_torch.py` (DF, Tik-Tok, RF), `run_kfp.py`, `run_holmes.py`; plotted by `plot_axes.py` |
 | Ours against the paper | same | `track-a-robustness/results/vs-paper.md` | `track-a-robustness/src/compare_to_paper.py` |
 | RF slot-size sweep | same | `track-a-robustness/results/rf-slot-sweep.md` | `track-a-robustness/src/run_torch.py rf --slots 300 / --slots 150`, tabulated by `sweep_summary.py` |
+| Four country pairs | `docs/track-a-robustness-axes.md` section 4 | `track-a-robustness/results/netpairs/summary.md` | `track-a-robustness/src/run_torch.py`, `run_kfp.py`, `run_holmes.py` with `--axes cross-network-post-au cross-network-post-uk`; tabulated by `netpair_summary.py` |
 | Ownership vs latency | `track-b-conflux/notes/06-fs-kill-test.md` | `track-b-conflux/results/fs-sweep.json` | `track-b-conflux/src/run_fs_sweep.py` |
 | What ownership is worth | `track-b-conflux/notes/07-fs-value-measured.md` | `track-b-conflux/results/fs-kfp.json` | `track-b-conflux/src/run_fs_kfp.py` |
 | Stock tor in Shadow | `track-b-conflux/notes/09-shadow-validation.md` | `track-b-conflux/results/shadow-sweep.json` | `track-b-conflux/shadow/` |

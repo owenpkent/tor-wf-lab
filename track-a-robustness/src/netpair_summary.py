@@ -127,6 +127,66 @@ def main():
               "measures it is one country pair, and at least for RF the choice of pair",
               "carries most of the effect."]
 
+    # ---- training vantage, which turns out to matter more than the pair
+    L += ["", "## The training vantage matters more than the pair", "",
+          "Averaging each classifier's two test cells per training vantage:", "",
+          "| Classifier | trained AU | trained UK | ratio |", "|---|---|---|---|"]
+    au_all, uk_all = [], []
+    for n in names:
+        rows = data[n]
+        au = [deg[n][0], deg[n][1]]
+        uk = [deg[n][2], deg[n][3]]
+        if any(v is None for v in au + uk):
+            continue
+        a, b = abs(np.mean(au)), abs(np.mean(uk))
+        au_all.append(a)
+        uk_all.append(b)
+        L.append(f"| {n} | {a:.3f} | {b:.3f} | {a/b:.2f}x |")
+    if au_all:
+        ma, mb = float(np.mean(au_all)), float(np.mean(uk_all))
+        L += [f"| **mean** | **{ma:.3f}** | **{mb:.3f}** | **{ma/mb:.2f}x** |", ""]
+
+        # which single cell is hardest, per classifier
+        hardest = {}
+        for n in names:
+            cells = [(deg[n][i], PAIRS[i][2]) for i in range(len(PAIRS))
+                     if deg[n][i] is not None]
+            if cells:
+                hardest[n] = min(cells)[1]
+        unanimous = len(set(hardest.values())) == 1
+
+        L += [f"Every classifier degrades more when trained on AU than when trained on "
+              f"UK, by {min(au_all[i]/uk_all[i] for i in range(len(au_all))):.1f}x to "
+              f"{max(au_all[i]/uk_all[i] for i in range(len(au_all))):.1f}x, "
+              f"and {ma/mb:.1f}x on average."]
+        if unanimous:
+            L += ["",
+                  f"**{list(hardest.values())[0]} is the hardest of the four cells for all "
+                  f"{len(hardest)} classifiers, unanimously.** That is the cell the thesis "
+                  "reports, and the only one it reports. Its headline cross-network result is "
+                  "therefore measured at the most pessimistic of the four configurations "
+                  "available in this data, for every classifier tested."]
+
+        L += ["",
+              "The timing profiles suggest why. Median page load time on the post-Conflux",
+              "month-0 collections is 15.97 s for AU against 11.99 s for CA and 12.05 s for",
+              "UK, so CA and UK are near-identical to each other and AU is roughly a third",
+              "slower. Training on the outlier vantage means learning a timing distribution",
+              "that matches neither of the others, while training on UK, which sits in the",
+              "middle, transfers both ways. The effect is asymmetric in exactly the way that",
+              "predicts: training on AU and testing elsewhere is costly, while training",
+              "elsewhere and testing on AU is among the cheapest cells in the table.",
+              "",
+              "This is a mechanism consistent with the data, not a demonstrated cause. Three",
+              "vantages is not enough to separate load time from every other thing that",
+              "differs between countries, and no attempt was made to control for the",
+              "underlying RTT, which is not recorded in the released traces.",
+              "",
+              "It does, however, change what the two-axis claim is a claim about. Much of",
+              "what the thesis attributes to a classifier's network-mismatch robustness is",
+              "carried by the choice of training vantage, which is a property of the",
+              "measurement setup rather than of the classifier."]
+
     out = os.path.join(NET, "summary.md")
     open(out, "w", encoding="utf-8").write("\n".join(L) + "\n")
     print("\n".join(L))
