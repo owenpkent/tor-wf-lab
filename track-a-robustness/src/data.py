@@ -28,6 +28,31 @@ DRIFT = {
               "month6": "post-conflux/post-month6-cfx0-uk.npz"},
 }
 
+# The thesis reports exactly one network pair, AU -> CA on the pre-Conflux
+# dataset, so a classifier's "network-mismatch robustness" is measured at a
+# single point. Post-Conflux month 0 is the only collection where AU, CA and UK
+# were gathered together, which makes it the only place to ask whether that
+# result is a property of the representation or of that one pair. These two axes
+# are a different dataset from CROSS_NETWORK and are not comparable to it cell
+# for cell; the comparison that matters is between the cells *within* each axis.
+CROSS_NETWORK_POST_AU = {
+    "train": "post-conflux/post-month0-cfx0-au.npz",
+    "test":  {"ca": "post-conflux/post-month0-cfx0-ca.npz",
+              "uk": "post-conflux/post-month0-cfx0-uk.npz"},
+}
+CROSS_NETWORK_POST_UK = {
+    "train": "post-conflux/post-month0-cfx0-uk.npz",
+    "test":  {"au": "post-conflux/post-month0-cfx0-au.npz",
+              "ca": "post-conflux/post-month0-cfx0-ca.npz"},
+}
+
+AXES = {
+    "cross-network": CROSS_NETWORK,
+    "drift": DRIFT,
+    "cross-network-post-au": CROSS_NETWORK_POST_AU,
+    "cross-network-post-uk": CROSS_NETWORK_POST_UK,
+}
+
 
 def load(relpath, downcast=True):
     """X int8, T float32, y int16. Full precision is not needed and the int64
@@ -71,7 +96,7 @@ def axis_split(axis, min_count=1, verbose=True):
     Label space is the intersection over the training set and every test set of
     that axis, so all cells of one axis are scored on the same classes.
     """
-    spec = {"cross-network": CROSS_NETWORK, "drift": DRIFT}[axis]
+    spec = AXES[axis]
     tr = load(spec["train"])
     tes = {k: load(v) for k, v in spec["test"].items()}
     labels = common_labels(tr[2], *[t[2] for t in tes.values()], min_count=min_count)
