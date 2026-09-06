@@ -93,17 +93,24 @@ def feature_attr(net, Xv, yv, n_classes, log, chunk=2):
     """
     from captum import attr as cattr
     net.eval()
-    bg, test, short = [], {}, []
+    bg, test, short, skipped = [], {}, [], []
     for c in range(n_classes):
         cur = Xv[yv == c]
         if len(cur) < N_BG + 1:
-            raise RuntimeError(f"class {c} has {len(cur)} validation samples, "
-                               f"attribution needs at least {N_BG + 1}")
+            # Too rare to attribute at all. It still contributes background if it
+            # can, and its effective range is filled in from the median below.
+            skipped.append((c, len(cur)))
+            if len(cur):
+                bg.append(cur[:N_BG])
+            continue
         bg.append(cur[:N_BG])
         test[c] = cur[N_BG:N_BG + N_ATTR]        # up to N_ATTR, fewer if rare
         if len(test[c]) < N_ATTR:
             short.append((c, len(test[c])))
     bg = torch.cat(bg, dim=0)
+    if skipped:
+        log(f"    [B] {len(skipped)} class(es) too rare to attribute "
+            f"{[c for c, _ in skipped]}, effective range taken from the median")
     if short:
         # Their code asserts >= 12 per class. The drift axis has rarer classes
         # than theirs (one has 74 traces), so a fixed 15% validation split
@@ -117,6 +124,9 @@ def feature_attr(net, Xv, yv, n_classes, log, chunk=2):
     out = []
     t0 = time.time()
     for c in range(n_classes):
+        if c not in test:
+            out.append(None)
+            continue
         acc = None
         for i in range(0, len(test[c]), chunk):
             a = dl.attribute(test[c][i:i + chunk], bg, target=c)
@@ -126,15 +136,26 @@ def feature_attr(net, Xv, yv, n_classes, log, chunk=2):
         if (c + 1) % 25 == 0:
             log(f"    [B] attributed {c+1}/{n_classes} classes "
                 f"({time.time()-t0:.0f}s)")
-    return np.array(out)
+    width = next(a.shape[0] for a in out if a is not None)
+    return np.array([np.full(width, np.nan) if a is None else a for a in out])
 
 
 def effective_ranges(attr_values):
     """[30%, 60%] band of the cumulative attribution curve, as percentages of
-    load time. Transcribed from data_augmentation.py."""
+    load time. Transcribed from data_augmentation.py.
+
+    Classes whose attribution could not be computed (too few validation samples,
+    marked NaN) take the median band over the classes that could. That is a
+    better estimate than any fixed constant and touches only the truncation
+    window used to augment those classes. See logs/deltas.md.
+    """
     rng = {}
     n = attr_values.shape[1]
+    missing = []
     for c in range(attr_values.shape[0]):
+        if not np.isfinite(attr_values[c]).all():
+            missing.append(c)
+            continue
         cum = np.cumsum(attr_values[c])
         m = cum.max()
         if m <= 0:                      # degenerate, fall back to the whole trace
@@ -146,6 +167,14 @@ def effective_ranges(attr_values):
         if hi <= lo:
             hi = lo + 1
         rng[c] = (max(lo, 1), min(max(hi, 2), 100))
+    if missing:
+        if rng:
+            med = (int(np.median([lo for lo, _ in rng.values()])),
+                   int(np.median([hi for _, hi in rng.values()])))
+        else:
+            med = (30, 60)
+        for c in missing:
+            rng[c] = med
     return rng
 
 

@@ -56,13 +56,20 @@ def evaluate(axis, seeds, min_count=1):
 
 
 def main():
-    seeds = list(range(int(sys.argv[1]))) if len(sys.argv) > 1 else SEEDS
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("n_seeds", nargs="?", type=int, default=len(SEEDS))
+    ap.add_argument("--axes", nargs="+", default=["cross-network", "drift"])
+    ap.add_argument("--tag", default="kfp", help="results basename")
+    a = ap.parse_args()
+
+    seeds = list(range(a.n_seeds))
     os.makedirs(RESULTS, exist_ok=True)
     rows = []
-    for axis in ("cross-network", "drift"):
+    for axis in a.axes:
         print(f"== {axis} ==")
         rows += evaluate(axis, seeds)
-    out = os.path.join(RESULTS, "kfp.json")
+    out = os.path.join(RESULTS, f"{a.tag}.json")
     json.dump({"classifier": "k-FP", "world": "closed",
                "n_estimators": N_ESTIMATORS, "rows": rows},
               open(out, "w"), indent=1)
