@@ -9,7 +9,7 @@ go/no-go decision. Neither is started yet.
 
 | Track | Question | Deliverable | Status |
 |---|---|---|---|
-| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Not started |
+| A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Step 1 done, blocked on scope decision |
 | B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Not started |
 
 ## Layout
@@ -82,8 +82,13 @@ and torch versions (Blackwell sm_120 needs cu128 or newer wheels).
 ## Open items before starting
 
 1. Confirm the paper's table numbers above against the PDF.
-2. Inventory OSF: what is actually downloadable without the DUA. Track A step 1
-   is explicit that if the open synthetic traces alone cannot support both axes,
-   that gets reported rather than worked around quietly.
-3. Decide whether the DUA is worth requesting. It has a lead time, so if Track A
-   needs it, the request should go out before the weekend rather than during it.
+2. ~~Inventory OSF.~~ Done, see `track-a-robustness/logs/osf-inventory.md`.
+   Result: ~10.6 GB of monitored traces are open and span AU/CA/UK across month
+   0/2/6, but the open-world background set is DUA-gated for one year post
+   release and is not even listed. Both axes are runnable closed-world only.
+3. Decide: run both axes closed-world now, or request the DUA and wait. The
+   two-axis question survives closed-world; numeric comparability to their
+   Table 3 and Table 5 does not.
+4. Email the authors about the analysis code. The thesis says it was released;
+   nothing is on OSF and no repo was found. Without it, step 2 becomes a
+   five-classifier reimplementation.
