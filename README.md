@@ -10,7 +10,7 @@ go/no-go decision. Track A is under way; Track B's scoping is finished.
 | Track | Question | Deliverable | Status |
 |---|---|---|---|
 | A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Data staged and verified, paper numbers confirmed, k-FP done closed-world. Four CNNs waiting on a GPU machine. |
-| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Done. Verdict: go, narrowed, after a one-day kill test. `docs/track-b-memo.md` |
+| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Done, and the kill test passed. Verdict: go, narrowed. `docs/track-b-memo.md` |
 
 ## Layout
 
@@ -116,8 +116,12 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
 
 ## What has actually run
 
-- k-FP, closed world, both axes, 3 seeds:
+- **Track A, k-FP**, closed world, both axes, 3 seeds:
   `track-a-robustness/results/kfp-summary.md`. Cross-network costs it 0.161
   macro F1 against an in-distribution anchor, six months of drift costs 0.463.
-- Nothing else. No CNN has been trained, and no number here is comparable to a
-  number in the paper.
+  No CNN has been trained, and no number there is comparable to a number in the
+  paper.
+- **Track B, first-segment sweep**: `track-b-conflux/notes/06-fs-kill-test.md`.
+  A guard's first-segment ownership goes 0.448 -> 0.891 -> 0.977 as its latency
+  advantage goes 0 -> 128 -> 512 ms. Detector validated at 1.0000 on non-Conflux
+  controls, and the paper's 65% truncation claim reproduces at 0.659.

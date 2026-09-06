@@ -34,5 +34,12 @@ on asking the authors what they are already doing.
   code, and only the first segment of a load needs de-biasing.
 - Q5 did not kill it either, but it found the real risk: the paper's conclusion
   names this project as its own future work.
-- Next action is not code. It is the one-day first-segment-detector check on the
-  open `-rtt-*` OSF files, described in section 6 of the memo.
+- The kill test is done, same day, and it passed: FS rate 0.448 with no
+  advantage, 0.891 at 128 ms, 0.977 at 512 ms, detector validated at 1.0000 on
+  single-leg control traces. See `notes/06-fs-kill-test.md` and
+  `results/fs-rate.png`.
+- It also moved the design target. The advantaged guard wins the first segment
+  more often *and* keeps more of the load after winning, so a policy that only
+  randomizes the first leg addresses half the effect.
+- Next action is the authors question in `../docs/correspondence/01`, then
+  candidate B: make `CONFLUX_ALG_CWNDRTT` reachable and measure it.

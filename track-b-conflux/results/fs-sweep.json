@@ -1,0 +1,186 @@
+{
+ "sweep": [
+  {
+   "file": "post-conflux/post-month2-cfx2-ca.npz",
+   "n": 34626,
+   "fs_rate": 0.44821810200427425,
+   "n_fs": 15520,
+   "median_cells": 1436.0,
+   "median_cells_fs": 1601.5,
+   "median_cells_nonfs": 1300.0,
+   "median_duration_s": 8.02556324005127,
+   "fs_rate_by_offset": {
+    "0": 0.44821810200427425,
+    "1": 0.023912666782186797,
+    "2": 0.32091491942470973,
+    "3": 0.300092416103506,
+    "4": 0.04658349217351124
+   },
+   "advantage_ms": 0
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-ca-rtt-032.npz",
+   "n": 18293,
+   "fs_rate": 0.568086153173345,
+   "n_fs": 10392,
+   "median_cells": 1717.0,
+   "median_cells_fs": 1851.5,
+   "median_cells_nonfs": 1525.0,
+   "median_duration_s": 8.54188346862793,
+   "fs_rate_by_offset": {
+    "0": 0.568086153173345,
+    "1": 0.022576941999672005,
+    "2": 0.4281419122068551,
+    "3": 0.41256218225550756,
+    "4": 0.0418739408516919
+   },
+   "advantage_ms": 32
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-ca-rtt-064.npz",
+   "n": 18673,
+   "fs_rate": 0.6748781663364216,
+   "n_fs": 12602,
+   "median_cells": 1808.0,
+   "median_cells_fs": 1912.0,
+   "median_cells_nonfs": 1589.0,
+   "median_duration_s": 9.155791282653809,
+   "fs_rate_by_offset": {
+    "0": 0.6748781663364216,
+    "1": 0.023938306645959407,
+    "2": 0.5022760134954212,
+    "3": 0.490440743319231,
+    "4": 0.0427355004552027
+   },
+   "advantage_ms": 64
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-ca-rtt-128.npz",
+   "n": 19748,
+   "fs_rate": 0.891432043751266,
+   "n_fs": 17604,
+   "median_cells": 2081.0,
+   "median_cells_fs": 2124.0,
+   "median_cells_nonfs": 1750.0,
+   "median_duration_s": 9.92582893371582,
+   "fs_rate_by_offset": {
+    "0": 0.891432043751266,
+    "1": 0.01681182904597934,
+    "2": 0.6583451488758355,
+    "3": 0.6526736884747822,
+    "4": 0.02648369455134697
+   },
+   "advantage_ms": 128
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-ca-rtt-256.npz",
+   "n": 20840,
+   "fs_rate": 0.9607485604606526,
+   "n_fs": 20022,
+   "median_cells": 2486.0,
+   "median_cells_fs": 2507.0,
+   "median_cells_nonfs": 1945.0,
+   "median_duration_s": 10.406070709228516,
+   "fs_rate_by_offset": {
+    "0": 0.9607485604606526,
+    "1": 0.012715930902111325,
+    "2": 0.6776871401151632,
+    "3": 0.6744241842610365,
+    "4": 0.019049904030710173
+   },
+   "advantage_ms": 256
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-ca-rtt-512.npz",
+   "n": 18853,
+   "fs_rate": 0.9765554553651938,
+   "n_fs": 18411,
+   "median_cells": 2947.0,
+   "median_cells_fs": 2967.0,
+   "median_cells_nonfs": 2054.0,
+   "median_duration_s": 12.245171546936035,
+   "fs_rate_by_offset": {
+    "0": 0.9765554553651938,
+    "1": 0.012093566010714474,
+    "2": 0.6813239272264361,
+    "3": 0.6815891370073728,
+    "4": 0.016814300111388108
+   },
+   "advantage_ms": 512
+  }
+ ],
+ "controls": [
+  {
+   "file": "post-conflux/post-month0-cfx0-ca.npz",
+   "n": 22496,
+   "fs_rate": 1.0,
+   "n_fs": 22496,
+   "median_cells": 4541.5,
+   "median_cells_fs": 4541.5,
+   "median_cells_nonfs": null,
+   "median_duration_s": 11.98690414428711,
+   "fs_rate_by_offset": {
+    "0": 1.0,
+    "1": 0.01489153627311522,
+    "2": 0.5412517780938834,
+    "3": 0.548675320056899,
+    "4": 0.02164829302987198
+   },
+   "name": "cfx0 CA month0"
+  },
+  {
+   "file": "post-conflux/post-month2-cfx0-uk.npz",
+   "n": 21584,
+   "fs_rate": 1.0,
+   "n_fs": 21584,
+   "median_cells": 4563.0,
+   "median_cells_fs": 4563.0,
+   "median_cells_nonfs": null,
+   "median_duration_s": 11.015279769897461,
+   "fs_rate_by_offset": {
+    "0": 1.0,
+    "1": 0.018346923647146036,
+    "2": 0.6943569310600445,
+    "3": 0.7013065233506302,
+    "4": 0.028446997776130467
+   },
+   "name": "cfx0 UK month2"
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-au.npz",
+   "n": 25376,
+   "fs_rate": 0.21055327868852458,
+   "n_fs": 5343,
+   "median_cells": 1270.0,
+   "median_cells_fs": 1491.0,
+   "median_cells_nonfs": 1220.0,
+   "median_duration_s": 10.492013931274414,
+   "fs_rate_by_offset": {
+    "0": 0.21055327868852458,
+    "1": 0.015723518284993694,
+    "2": 0.14545239596469103,
+    "3": 0.13934426229508196,
+    "4": 0.0225015762925599
+   },
+   "name": "cfx2 AU month2"
+  },
+  {
+   "file": "post-conflux/post-month2-cfx2-uk.npz",
+   "n": 7712,
+   "fs_rate": 0.15119294605809128,
+   "n_fs": 1166,
+   "median_cells": 991.0,
+   "median_cells_fs": 1387.5,
+   "median_cells_nonfs": 933.0,
+   "median_duration_s": 5.341455936431885,
+   "fs_rate_by_offset": {
+    "0": 0.15119294605809128,
+    "1": 0.014263485477178423,
+    "2": 0.10567946058091286,
+    "3": 0.0958246887966805,
+    "4": 0.021135892116182574
+   },
+   "name": "cfx2 UK month2"
+  }
+ ]
+}

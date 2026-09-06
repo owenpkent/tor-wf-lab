@@ -5,7 +5,7 @@ commit 3937194 (2026-09-03), proposal 329, the SFU thesis version of
 arXiv:2603.07412, Tor's GitLab issue API, and the WF literature. Working notes,
 one file per question, in `track-b-conflux/notes/`.
 
-## Recommendation: go, on a narrower project, with a one-day kill test first
+## Recommendation: go, on a narrower project. The kill test has now been run and it passed
 
 Not the project as framed. "Design a Conflux scheduling algorithm that mitigates
 latency bias" is the paper's own stated future work, which makes it a race
@@ -17,8 +17,14 @@ worth multiple weeks is smaller and lands somewhere the authors will not go:
 > consensus parameter, and take the measured performance cost to tor-dev.
 
 That produces something useful even if the WF benefit turns out to be small,
-because the dead-code and parameter work stands on its own. Before committing
-the weeks, run the kill test in section 6, which needs one day and no simulator.
+because the dead-code and parameter work stands on its own.
+
+**Update, same day.** The kill test in section 6 has been run. First-segment
+ownership goes from 0.448 at no advantage to 0.891 at 128 ms and 0.977 at
+512 ms, the detector scores a perfect 1.0000 on non-Conflux control traces, and
+the paper's "about 65% of traces hold less than half a load" reproduces at
+0.659. The mechanism is confirmed on open data. It also turned up one thing that
+changes the design target, in section 6 below.
 
 ## 1. How LowRTT picks the primary leg
 
@@ -143,23 +149,40 @@ sentence to the draft email already sitting in `docs/correspondence/` asking
 whether anyone is working on the scheduling follow-up. It costs nothing and
 resolves the risk in days.
 
-## 6. The kill test, before committing any weeks
+## 6. The kill test: run, and passed
 
-The whole project rests on one mechanism: latency advantage buys first-segment
-ownership. That can be checked from open data on a laptop.
+The project rests on one mechanism, latency advantage buying first-segment
+ownership. It is now measured, from open data, on this laptop. Full write-up in
+`track-b-conflux/notes/06-fs-kill-test.md`, figure at
+`track-b-conflux/results/fs-rate.png`.
 
-The paper publishes its first-segment detector as three rules (thesis 4.3.2):
-first cell after the handshake is outgoing, at least one incoming cell within
-the first 10, at least one outgoing cell within a 10-cell window after the first
-incoming one. The OSF files `post-month2-cfx2-ca-rtt-{032,064,128,256,512}.npz`
-and the `-nga` no-advantage variants are open, already downloaded and
-checksum-verified in this repo for Track A.
+| Guard advantage | FS rate | Median cells the guard sees |
+|---|---|---|
+| 0 ms | 0.448 | 1,436 |
+| 32 ms | 0.568 | 1,717 |
+| 64 ms | 0.675 | 1,808 |
+| 128 ms | 0.891 | 2,081 |
+| 256 ms | 0.961 | 2,486 |
+| 512 ms | 0.977 | 2,947 |
 
-One day: implement the detector, run it across the five latency settings, plot
-FS rate against advantage. If FS rate does not track the advantage, no scheduler
-change can help and the project ends there having cost a day. If it does track,
-the same harness measures every candidate policy later, and it doubles as the
-offline evaluation stage that keeps Shadow small.
+Monotone, with the knee between 64 and 128 ms, where the paper's TPR curve also
+turns. Two checks say the detector is right rather than lucky: on non-Conflux
+traces, where each load has exactly one leg and every trace must be a first
+segment, it returns 1.0000 on 22,496 traces; and the paper's claim that about
+65% of Conflux traces hold less than half a page load reproduces at 0.659
+without being aimed at. The unmanipulated AU and UK clients sit at 0.211 and
+0.151, which is the same bias occurring naturally when the guard is simply the
+slower leg.
+
+**The finding that moves the design target.** Combining the paper's DF TPR with
+our FS rate, and assuming as they do that non-first-segment traces contribute
+little, the implied detection rate *given* first-segment ownership also doubles,
+from 0.42 at 0 ms to 0.83 at 128 ms. The advantaged guard both wins the start
+more often and keeps more of the load after winning it. A policy that only
+randomizes the first leg addresses one of two multiplicative factors and would,
+on this crude model, take TPR from 0.736 to roughly 0.37 rather than back to
+0.189. Candidate B is the one that touches both terms; candidate A alone is not
+enough. That is worth knowing before writing a line of scheduler code.
 
 ## Summary
 
@@ -170,4 +193,5 @@ offline evaluation stage that keeps Shadow small.
 | 3. Policies | Randomized first leg; CWNDRTT-for-first-K; RTT quantization with a consensus-parameter floor |
 | 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
 | 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
-| **Verdict** | **Go**, on the narrowed project, after the one-day kill test, and after asking the authors what they are already doing |
+| 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls |
+| **Verdict** | **Go**, on the narrowed project, now aimed at both terms of the attack rather than only first-leg selection, and still conditional on asking the authors what they are already doing |
