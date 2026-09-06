@@ -5,27 +5,66 @@ commit 3937194 (2026-09-03), proposal 329, the SFU thesis version of
 arXiv:2603.07412, Tor's GitLab issue API, and the WF literature. Working notes,
 one file per question, in `track-b-conflux/notes/`.
 
-## Recommendation: go, on a narrower project. The kill test has now been run and it passed
+## Verdict: go. The premise is measured, not assumed, and the project got smaller
 
 Not the project as framed. "Design a Conflux scheduling algorithm that mitigates
 latency bias" is the paper's own stated future work, which makes it a race
-against the group holding the guard relay and the gated dataset. The version
-worth multiple weeks is smaller and lands somewhere the authors will not go:
+against the group holding the guard relay and the gated dataset. What is worth
+multiple weeks is narrower, lands where the authors will not go, and is now
+aimed by measurement rather than by guesswork:
 
-> Measure how much first-segment ownership a guard can buy with latency, make
-> Tor's already-written low-reorder scheduler reachable, add a bias floor as a
-> consensus parameter, and take the measured performance cost to tor-dev.
+> De-bias **which leg carries the start of the load**, ship it as a consensus
+> parameter alongside Tor's already-written but unreachable low-reorder
+> scheduler, and take the measured time-to-first-byte cost to tor-dev.
 
-That produces something useful even if the WF benefit turns out to be small,
-because the dead-code and parameter work stands on its own.
+Three things moved between the scoping questions and this verdict, all of them
+from open data on a laptop in an afternoon.
 
-**Update, same day.** The kill test in section 6 has been run and passed.
-First-segment ownership goes from 0.448 at no advantage to 0.891 at 128 ms and
-0.977 at 512 ms, the detector scores a perfect 1.0000 on non-Conflux control
-traces, and the paper's "about 65% of traces hold less than half a load"
-reproduces at 0.659. A second run then measured what ownership is worth: it
-roughly doubles the guard's per-trace accuracy, and the advantage buys ownership
-far more than it buys anything else. Both are in section 6.
+**The mechanism is confirmed.** First-segment ownership tracks latency advantage
+directly: 0.448 with no advantage, 0.891 at 128 ms, 0.977 at 512 ms. The
+detector returns exactly 1.0000 on non-Conflux control traces, and the paper's
+own "about 65% of traces hold less than half a load" reproduces at 0.659 without
+being aimed at. This is no longer a premise the project rests on; it is a result
+the project starts from.
+
+**The attack is one term, not two.** Measuring what ownership is worth, rather
+than inferring it, gives 128 ms of advantage a x1.97 multiplier on *how often*
+the guard owns the first segment and only x1.19 on its accuracy on the traces it
+owns. That kills an earlier read of these numbers, made from the paper's TPR
+under the assumption that non-first-segment traces contribute nothing. They
+contribute plenty: 0.374 accuracy, forty times chance.
+
+**So the intervention is the smallest one available.** If ownership is the
+attack, the thing to change is the initial leg choice, which lives in one
+function, `conflux_pick_first_leg()` (`conflux.c:600`), plus the exit's
+equivalent. That is a smaller and far more reviewable change than a stateful
+first-K scheduler, and it targets the dominant term. Candidate A, which the
+inferred decomposition had demoted, is back as a shippable measure on its own.
+
+**What that buys, and where it stops.** Randomizing ownership removes the
+*advantage*, taking the attacker from 0.891 back toward 0.448 ownership. It does
+not touch the 0.744 accuracy the guard gets on traces it owns even with no
+advantage at all, which is Conflux's residual leak and is not a latency-bias
+problem. Anything below that ceiling needs candidate B's thinning of the prefix.
+Two deliverables, then: **A is the engineering win, B is the research
+contribution.**
+
+### Conditions on the go
+
+1. **Send the authors question first.** It is already in
+   `docs/correspondence/01`, unsent. Their conclusion names this project as
+   their future work, and they have the guard, the crawler and the gated
+   dataset. One sentence resolves in days what would otherwise surface in
+   week three.
+2. **Do not quote closed-world numbers as if they were the paper's.** Everything
+   above is closed-world accuracy over monitored classes. The paper's TPRs are
+   open world at a fixed 0.5% FPR, where seeing more of a load mainly buys
+   precision, which a closed-world metric cannot see. The x1.19 enrichment term
+   is a lower bound on what the open world would show.
+3. **Kill conditions that still apply.** If the authors are already building it,
+   stop. If a Shadow run shows the TTFB cost of randomizing the first leg is
+   worse than roughly d/2 on benign leg pairs, stop, because the performance
+   argument is then unwinnable at tor-dev.
 
 ## 1. How LowRTT picks the primary leg
 
@@ -212,8 +251,8 @@ baseline randomization leaves untouched.
 |---|---|
 | 1. LowRTT mechanics | Lowest-RTT leg with cwnd room; client picks the exit's algorithm; CWNDRTT is unreachable dead code |
 | 2. Crux | Survives. Reorder can be bounded, and only the first segment needs de-biasing, but TTFB cost is highest where the bias matters most |
-| 3. Policies | Randomized first leg; CWNDRTT-for-first-K; RTT quantization with a consensus-parameter floor |
+| 3. Policies | Randomized first leg (now the primary, it attacks the dominant term); CWNDRTT-for-first-K (goes below the residual leak); RTT quantization with a consensus-parameter floor |
 | 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
 | 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
 | 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls. Follow-up measurement: ownership x1.97 at 128 ms, enrichment only x1.19 |
-| **Verdict** | **Go**, on the narrowed project, now aimed at both terms of the attack rather than only first-leg selection, and still conditional on asking the authors what they are already doing |
+| **Verdict** | **Go.** The mechanism is measured, the attack is one term rather than two, and the intervention that matters is one function. Ship candidate A as the engineering win and candidate B as the research contribution. Conditional only on asking the authors what they are already doing |
