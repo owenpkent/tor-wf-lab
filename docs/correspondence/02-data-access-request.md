@@ -4,7 +4,7 @@
 access requests enabled). No email address, form, or lead time for the data use
 agreement is stated in the OSF wiki or in the thesis, so the platform mechanism
 is the only documented path. If it produces no response, fall back to sending
-this same text to taowang@sfu.ca.
+this same text to <seven-character full name>@sfu.ca.
 
 ---
 

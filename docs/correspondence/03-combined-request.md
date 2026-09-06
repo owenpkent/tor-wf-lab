@@ -1,6 +1,6 @@
 # Draft 3: one email, superseding drafts 1 and 2
 
-**To:** taowang@sfu.ca
+**To:** <seven-character full name>@sfu.ca
 **Subject:** Open-world traces and analysis code for "Reality Check for Tor WF"
 
 Supersedes `01-code-availability.md` and `02-data-access-request.md`. Send this

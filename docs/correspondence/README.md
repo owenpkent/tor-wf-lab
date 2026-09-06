@@ -5,8 +5,8 @@ Owen doing it himself.
 
 | File | To | Purpose | Sent? |
 |---|---|---|---|
-| `03-combined-request.md` | taowang@sfu.ca | **Send this one.** Data, code, and the Conflux scheduling question | No |
-| `01-code-availability.md` | taowang@sfu.ca | Superseded by 03 | No |
+| `03-combined-request.md` | <seven-character full name>@sfu.ca | **Send this one.** Data, code, and the Conflux scheduling question | No |
+| `01-code-availability.md` | <seven-character full name>@sfu.ca | Superseded by 03 | No |
 | `02-data-access-request.md` | OSF access request | Superseded by 03; its route does not exist | No |
 
 **Send 03. It replaces 01 and 02**, which are kept only as the source material.
@@ -25,8 +25,14 @@ Everything else is ready to paste.
 
 Tao Wang, Assistant Professor, School of Computing Science, SFU, senior author.
 His faculty page gives the address as a puzzle ("my full name in one word,
-seven characters"@sfu.ca) rather than in plain text, which decodes to
-taowang@sfu.ca and matches what is listed elsewhere. The obfuscation is a hint
+seven characters"@sfu.ca) rather than in plain text, and the decoded form
+matches what is listed elsewhere.
+
+**This repo is public, so the decoded address is deliberately not written out
+anywhere in it.** Every draft addresses `<seven-character full name>@sfu.ca`.
+Decode it when you send; do not commit the plaintext back. Publishing it would
+undo the obfuscation he chose, and a public repo is exactly the kind of thing
+address scrapers read. The obfuscation is a hint
 that he does not want bulk mail, so both drafts are deliberately short and lead
 with the specific ask.
 

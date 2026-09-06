@@ -1,6 +1,6 @@
 # Draft 1: analysis code availability
 
-**To:** taowang@sfu.ca
+**To:** <seven-character full name>@sfu.ca
 **Subject:** Analysis code for "Reality Check for Tor WF in the Open World"
 
 ---
