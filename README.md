@@ -125,3 +125,8 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
   A guard's first-segment ownership goes 0.448 -> 0.891 -> 0.977 as its latency
   advantage goes 0 -> 128 -> 512 ms. Detector validated at 1.0000 on non-Conflux
   controls, and the paper's 65% truncation claim reproduces at 0.659.
+- **Track B, what ownership is worth**:
+  `track-b-conflux/notes/07-fs-value-measured.md`. k-FP classifies 0.744 of
+  first-segment traces correctly against 0.374 of the rest. Advantage buys
+  ownership (x1.97 at 128 ms) far more than it buys accuracy on owned traces
+  (x1.19).

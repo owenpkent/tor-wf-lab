@@ -19,12 +19,13 @@ worth multiple weeks is smaller and lands somewhere the authors will not go:
 That produces something useful even if the WF benefit turns out to be small,
 because the dead-code and parameter work stands on its own.
 
-**Update, same day.** The kill test in section 6 has been run. First-segment
-ownership goes from 0.448 at no advantage to 0.891 at 128 ms and 0.977 at
-512 ms, the detector scores a perfect 1.0000 on non-Conflux control traces, and
-the paper's "about 65% of traces hold less than half a load" reproduces at
-0.659. The mechanism is confirmed on open data. It also turned up one thing that
-changes the design target, in section 6 below.
+**Update, same day.** The kill test in section 6 has been run and passed.
+First-segment ownership goes from 0.448 at no advantage to 0.891 at 128 ms and
+0.977 at 512 ms, the detector scores a perfect 1.0000 on non-Conflux control
+traces, and the paper's "about 65% of traces hold less than half a load"
+reproduces at 0.659. A second run then measured what ownership is worth: it
+roughly doubles the guard's per-trace accuracy, and the advantage buys ownership
+far more than it buys anything else. Both are in section 6.
 
 ## 1. How LowRTT picks the primary leg
 
@@ -174,15 +175,36 @@ without being aimed at. The unmanipulated AU and UK clients sit at 0.211 and
 0.151, which is the same bias occurring naturally when the guard is simply the
 slower leg.
 
-**The finding that moves the design target.** Combining the paper's DF TPR with
-our FS rate, and assuming as they do that non-first-segment traces contribute
-little, the implied detection rate *given* first-segment ownership also doubles,
-from 0.42 at 0 ms to 0.83 at 128 ms. The advantaged guard both wins the start
-more often and keeps more of the load after winning it. A policy that only
-randomizes the first leg addresses one of two multiplicative factors and would,
-on this crude model, take TPR from 0.736 to roughly 0.37 rather than back to
-0.189. Candidate B is the one that touches both terms; candidate A alone is not
-enough. That is worth knowing before writing a line of scheduler code.
+**What ownership is worth, measured rather than inferred.** A second run trains
+k-FP per condition and scores the held-out traces separately by whether the
+guard owned the first segment (`notes/07-fs-value-measured.md`,
+`results/fs-kfp.png`):
+
+| Advantage | Accuracy given FS | Accuracy given non-FS | Ratio |
+|---|---|---|---|
+| 0 ms | 0.744 | 0.374 | 2.0 |
+| 128 ms | 0.886 | 0.328 | 2.7 |
+| 512 ms | 0.907 | 0.236 | 3.8 |
+
+Decomposed against the no-advantage baseline, 128 ms of advantage multiplies how
+often the guard owns the first segment by **1.97** and its accuracy on the
+traces it owns by **1.19**. **Ownership is the attack; enrichment is second
+order.**
+
+This also corrects a decomposition made earlier the same day. Inferring the
+conditional from the paper's TPR, under their implicit assumption that
+non-first-segment traces contribute nothing, suggested it doubled. Measured, it
+rises by a fifth, and the assumption is simply false in a closed world: k-FP
+classifies 0.374 of non-first-segment traces correctly with no advantage at all,
+forty times chance. Two caveats keep this from being over-read: closed-world
+accuracy cannot see precision, which is most of what seeing more of a load buys
+at a fixed 0.5% FPR, and the non-FS subset thins to 87 traces by 512 ms.
+
+**Consequence for the design.** Candidate A, randomizing the initial leg, is
+back in contention on its own, because it attacks the dominant term. Candidate B
+remains the better design, but for a different reason than first supposed: it
+degrades the features on the traces the guard does own, which is the 0.744
+baseline randomization leaves untouched.
 
 ## Summary
 
@@ -193,5 +215,5 @@ enough. That is worth knowing before writing a line of scheduler code.
 | 3. Policies | Randomized first leg; CWNDRTT-for-first-K; RTT quantization with a consensus-parameter floor |
 | 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
 | 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
-| 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls |
+| 6. Kill test | **Passed.** FS rate 0.448 -> 0.891 -> 0.977 across the advantage sweep, detector validated at 1.0000 on single-leg controls. Follow-up measurement: ownership x1.97 at 128 ms, enrichment only x1.19 |
 | **Verdict** | **Go**, on the narrowed project, now aimed at both terms of the attack rather than only first-leg selection, and still conditional on asking the authors what they are already doing |

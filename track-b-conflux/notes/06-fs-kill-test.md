@@ -64,6 +64,13 @@ of FS traces holding less than half a load falls from 0.62 to 0.39.
 **So a policy that only randomizes first-segment ownership addresses one of two
 multiplicative factors.** Under this crude model, restoring FS rate to 0.448 at
 a 128 ms advantage would take TPR from 0.736 to about 0.37, not back to 0.189.
+
+> **Superseded the same day.** The conditional term was measured directly rather
+> than inferred, in `07-fs-value-measured.md`, and it rises by 19% over the
+> sweep, not 100%. The assumption below, that non-first-segment traces
+> contribute nothing, is false in a closed world: k-FP classifies 0.374 of them
+> correctly with no advantage at all. Read the decomposition in this section as
+> the reasoning that motivated the follow-up measurement, not as a result.
 Getting the rest requires limiting how much of the tail the advantaged leg
 carries, which is the LowRTT "keep the fast leg until it blocks" behaviour, not
 the first-leg pick. Candidate B in `03-candidate-policies.md` touches both;

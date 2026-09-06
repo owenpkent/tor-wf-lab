@@ -38,8 +38,10 @@ on asking the authors what they are already doing.
   advantage, 0.891 at 128 ms, 0.977 at 512 ms, detector validated at 1.0000 on
   single-leg control traces. See `notes/06-fs-kill-test.md` and
   `results/fs-rate.png`.
-- It also moved the design target. The advantaged guard wins the first segment
-  more often *and* keeps more of the load after winning, so a policy that only
-  randomizes the first leg addresses half the effect.
+- A follow-up measured what ownership is worth instead of inferring it
+  (`notes/07-fs-value-measured.md`): k-FP gets 0.744 of first-segment traces
+  right against 0.374 of the rest, and 128 ms of advantage multiplies ownership
+  by 1.97 but per-trace accuracy on owned traces by only 1.19. Ownership is the
+  attack.
 - Next action is the authors question in `../docs/correspondence/01`, then
   candidate B: make `CONFLUX_ALG_CWNDRTT` reachable and measure it.
