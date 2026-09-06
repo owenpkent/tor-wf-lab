@@ -18,8 +18,10 @@ components, so OSF renders no button. Email is the only route. And with both
 asks going to the same person, two emails would be two interruptions for one
 conversation.
 
-Draft 03 has exactly one bracketed field to fill in, the affiliation line.
-Everything else is ready to paste.
+Draft 03 is complete. Nothing is bracketed, nothing needs editing: paste the
+body between the `---` rules into an email to taowang@sfu.ca with the subject
+line given at the top, and send. The affiliation reads "Independent researcher,
+unaffiliated".
 
 ## Contact provenance
 
