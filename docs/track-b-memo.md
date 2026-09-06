@@ -1,0 +1,173 @@
+# Track B: Conflux scheduling as a WF defense. Go or no-go?
+
+Scoping only, 2026-09-06. No Tor patches were written. Sources: `tor.git` at
+commit 3937194 (2026-09-03), proposal 329, the SFU thesis version of
+arXiv:2603.07412, Tor's GitLab issue API, and the WF literature. Working notes,
+one file per question, in `track-b-conflux/notes/`.
+
+## Recommendation: go, on a narrower project, with a one-day kill test first
+
+Not the project as framed. "Design a Conflux scheduling algorithm that mitigates
+latency bias" is the paper's own stated future work, which makes it a race
+against the group holding the guard relay and the gated dataset. The version
+worth multiple weeks is smaller and lands somewhere the authors will not go:
+
+> Measure how much first-segment ownership a guard can buy with latency, make
+> Tor's already-written low-reorder scheduler reachable, add a bias floor as a
+> consensus parameter, and take the measured performance cost to tor-dev.
+
+That produces something useful even if the WF benefit turns out to be small,
+because the dead-code and parameter work stands on its own. Before committing
+the weeks, run the kill test in section 6, which needs one day and no simulator.
+
+## 1. How LowRTT picks the primary leg
+
+`conflux_decide_next_circ()` (`conflux.c:672`) picks the first leg by lowest
+non-zero RTT (`conflux.c:600`), then dispatches to one of three RTT-ordered
+schedulers: MinRTT (`conflux.c:275`), LowRTT (`conflux.c:307`), CWNDRTT
+(`conflux.c:431`). LowRTT takes the lowest-RTT leg that still has congestion
+window room. Both switch limiters that were meant to rate-limit leg changes are
+inert in the current tree: `cells_until_switch` is always 0 and `cfx_drain_pct`
+defaults to 0.
+
+The decision reads exactly two pieces of state, `leg->circ_rtts_usec` and the
+leg's cwnd. No history, no byte counters, no randomness, which is why the bias
+holds steady across a page load instead of averaging out.
+
+Two things the proposal does not make obvious, both of which matter:
+
+- **The client chooses the exit's download scheduler.** The client's requested
+  UX rides in the LINK cell and the exit does
+  `conflux_choose_algorithm(leg->link->desired_ux)` (`conflux_pool.c:513`).
+  Default `throughput` maps to LowRTT. It is already a torrc option,
+  `ConfluxClientUX`. The guard-observable direction is therefore configurable
+  from the client today.
+- **CWNDRTT is dead code.** It is implemented, dispatched, and unreachable,
+  because no UX value maps to it. The switch statement carries
+  `TODO-329-TUNING: Pick better algs here`. BLEST_TOR, specified in proposal 329
+  section 3.4, was never implemented at all.
+
+## 2. The crux, and it does not kill the project
+
+The brief's kill condition was: if spreading traffic more evenly necessarily
+reintroduces head-of-line blocking, stop. It does not, for two reasons, and
+there is a third that constrains the design.
+
+**The premise is already refuted inside Tor's tree.** CWNDRTT uses an auxiliary
+leg only up to `cwnd_leg * min_rtt / leg_rtt`, the amount that arrives at about
+the same time as the fast leg's data, and its docstring claims reorder bloat
+confined to slow start. Head-of-line blocking is a function of reorder distance,
+not of using both legs.
+
+**The defense only needs the first segment.** The paper's attack is built on who
+owns the beginning of the load: the prefix is feature-rich, primary-leg switches
+often come only after about 50 KB, and roughly 65% of monitored traces hold less
+than half the load's cells. A policy can de-bias the first segment and hand over
+to LowRTT, which bounds the cost to the phase where Conflux's throughput benefit
+has not appeared yet.
+
+**But the cost is highest exactly where the bias matters.** De-biasing means
+sometimes starting on the slower leg, and when the asymmetry is the paper's
+128 ms, that is roughly a 64 ms average time-to-first-byte regression on
+affected loads. Nothing escapes that. What softens it: benign leg pairs differ
+by about 10 ms rather than 150, so most users pay almost nothing, and a large
+advantage is usually manufactured by the attacker, so removing the payoff
+removes an incentive rather than merely moving a constant.
+
+The honest restatement of the crux is therefore not "is it possible" but "how
+much TTFB is Tor willing to spend to make first-segment ownership
+unpredictable, and does spending it actually cost the attacker recall".
+
+## 3. Candidate policies
+
+Full sketches in `notes/03-candidate-policies.md`.
+
+**A. Randomized first leg.** Pick the initial leg at random among legs with a
+valid RTT, independently at each endpoint, then resume LowRTT. Attacks the
+paper's first-segment definition directly, since a first segment requires
+winning at both endpoints. *Tradeoff:* about d/2 of added TTFB, and the
+advantaged guard still carries more of the tail because LowRTT resumes.
+
+**B. CWNDRTT for the first K cells, LowRTT after.** Make the existing algorithm
+reachable and use it for the first segment only. The only candidate that
+degrades the features rather than reassigning ownership, since the guard sees a
+thinned, interleaved prefix. *Tradeoff:* out-of-order queue memory during slow
+start, capped by the existing `cfx_max_oooq_bytes`, and the weakest guarantee,
+because CWNDRTT still prefers the min-RTT leg whenever it can send.
+
+**C. RTT quantization with a bias floor.** Treat legs within T milliseconds as
+equivalent and break the tie randomly, T shipped as a consensus parameter beside
+the existing `cfx_*` family. Best fit to the data, whose TPR curve is flat until
+the advantage nears the 150 ms path delta and then rises sharply. *Tradeoff:* T
+is an arms-race constant, and it touches all three schedulers.
+
+Build order: B, then A, then propose C to tor-dev.
+
+## 4. Shadow
+
+Usable, and the right tool for the latency delta, but third-cheapest of four
+environments and not where to start. Tor's own WF-defense guidance
+(`doc/HACKING/CircuitPaddingDevelopment.md` section 4) ranks trace simulation
+first for iteration, rules out Chutney for anything latency-dependent, puts
+Shadow third, and calls live-network-with-your-own-relays the gold standard.
+
+A minimal experiment needs one client, two guards with a controllable RTT delta,
+one shared exit, congestion control and Conflux on, and enough volume to cross
+slow start. It does **not** need a browser: the measurement at this stage is the
+first-segment rate and the share of the first N cells, which are scheduler
+properties. `tgen` is enough, and the WF classification belongs in a separate
+offline step.
+
+Setup cost: two to four days for Shadow plus tornettools from scratch, and a 1%
+network runs to about 30 GiB of RAM for an hour of simulated time. A hand-built
+topology of six or seven nodes is hours to a day and contains the whole effect,
+since the effect is local to one conflux set. Scale only matters once the claim
+becomes "and it does not hurt the network".
+
+## 5. Prior art
+
+Nothing does this. Tor's open issues contain no conflux scheduling-policy work
+and no conflux-plus-fingerprinting issue; the conflux issues are bugs, onion
+service support and metrics. Proposal 329 contemplates the design axis and says
+the schedulers are "in flux", without treating latency bias as adversarial. The
+literature is adjacent: TrafficSliver (CCS 2020) splits across entry nodes
+rather than modifying Conflux, Splitting Hairs (WPES 2022) attacks splitting
+defenses, MUFFLER (2025) is a separate obfuscation mechanism, and the October
+2025 survey does not list multipath scheduling among defense families.
+
+**The real risk is the authors.** Their conclusion names this project verbatim
+as future work, and they hold the guard, the crawler, the ground truth
+instrumentation and a dataset nobody else can get for a year. Competing on
+evaluation quality is a losing race; getting the change into Tor is not. Add one
+sentence to the draft email already sitting in `docs/correspondence/` asking
+whether anyone is working on the scheduling follow-up. It costs nothing and
+resolves the risk in days.
+
+## 6. The kill test, before committing any weeks
+
+The whole project rests on one mechanism: latency advantage buys first-segment
+ownership. That can be checked from open data on a laptop.
+
+The paper publishes its first-segment detector as three rules (thesis 4.3.2):
+first cell after the handshake is outgoing, at least one incoming cell within
+the first 10, at least one outgoing cell within a 10-cell window after the first
+incoming one. The OSF files `post-month2-cfx2-ca-rtt-{032,064,128,256,512}.npz`
+and the `-nga` no-advantage variants are open, already downloaded and
+checksum-verified in this repo for Track A.
+
+One day: implement the detector, run it across the five latency settings, plot
+FS rate against advantage. If FS rate does not track the advantage, no scheduler
+change can help and the project ends there having cost a day. If it does track,
+the same harness measures every candidate policy later, and it doubles as the
+offline evaluation stage that keeps Shadow small.
+
+## Summary
+
+| Question | Answer |
+|---|---|
+| 1. LowRTT mechanics | Lowest-RTT leg with cwnd room; client picks the exit's algorithm; CWNDRTT is unreachable dead code |
+| 2. Crux | Survives. Reorder can be bounded, and only the first segment needs de-biasing, but TTFB cost is highest where the bias matters most |
+| 3. Policies | Randomized first leg; CWNDRTT-for-first-K; RTT quantization with a consensus-parameter floor |
+| 4. Shadow | Yes, small hand-built topology, hours to a day; full tornettools is the wrong first target |
+| 5. Prior art | Unclaimed in Tor and in the literature. Risk is the paper's own authors |
+| **Verdict** | **Go**, on the narrowed project, after the one-day kill test, and after asking the authors what they are already doing |

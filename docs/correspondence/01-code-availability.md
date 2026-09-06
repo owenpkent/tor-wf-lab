@@ -29,6 +29,12 @@ am not looking for anything packaged.
 If Mohammadhamed Shadbeh is the right person to ask, I would be grateful if you
 could forward this.
 
+One unrelated question, if you do not mind. Your conclusion suggests designing
+Conflux scheduling algorithms that mitigate the latency bias. Is anyone in your
+group or among your collaborators already working on that? I am scoping a small
+project in that direction and would rather not duplicate work that is already
+under way.
+
 Thank you for releasing the data. The pre/post-Conflux split with the latency
 variants is unusually useful.
 
@@ -43,6 +49,10 @@ Owen Kent
 - The only field to fill is the affiliation line.
 - Deliberately does not mention the DUA. Keep the two requests separate so a
   slow answer on one does not stall the other.
+- The Conflux scheduling paragraph was added 2026-09-06 for Track B. It is the
+  cheapest way to resolve the one serious no-go risk in `docs/track-b-memo.md`,
+  which is that the authors are the obvious people to be doing this already.
+  Delete it if you would rather keep the email to a single ask.
 - If there is no reply in about a week, the fallback is reimplementation from
   the original papers, logged as a delta. k-FP, DF, Tik-Tok and RF have usable
   public reference implementations. Holmes is the recent one and the risk.

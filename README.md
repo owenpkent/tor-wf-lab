@@ -5,12 +5,12 @@ Check for Tor Website Fingerprinting in the Open World* (arXiv:2603.07412,
 March 2026).
 
 They are independent. Track A aims at an experimental result, Track B aims at a
-go/no-go decision. Track A is under way; Track B has not started.
+go/no-go decision. Track A is under way; Track B's scoping is finished.
 
 | Track | Question | Deliverable | Status |
 |---|---|---|---|
 | A | Are network-mismatch robustness and temporal-drift robustness genuinely distinct axes, with no classifier good at both? | Scatter plot + numbers table + verdict paragraph | Data staged and verified, paper numbers confirmed, k-FP done closed-world. Four CNNs waiting on a GPU machine. |
-| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Not started |
+| B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Memo with go/no-go | Done. Verdict: go, narrowed, after a one-day kill test. `docs/track-b-memo.md` |
 
 ## Layout
 
