@@ -31,7 +31,7 @@ one pair the thesis reports**. On the other three it is comfortably ahead of
 k-FP and within a few points of Tik-Tok, which is not the profile of a
 classifier that cannot cross networks.
 
-This weakens, but does not eliminate, the two-axis reading. RF ranks second-worst, third-worst across the four pairs (worst on 0 of 4), and is still the only classifier whose drift robustness beats its network robustness.
+This weakens, but does not eliminate, the two-axis reading. RF ranks second-worst, third-worst across the four pairs (worst on 0 of 4), and remains the most network-sensitive of the five relative to its drift damage, an ordering that also holds from both training vantages (see ../vantage/summary.md).
 But the dramatic version of the claim, that RF simply fails across networks,
 rests on AU->CA.
 
@@ -44,6 +44,12 @@ hostile and RF is disproportionately hurt by it rather than uniquely so.
 The honest summary is that 'network-mismatch robustness' as the thesis
 measures it is one country pair, and at least for RF the choice of pair
 carries most of the effect.
+
+Note also that RF's network damage exceeds its drift damage on AU->CA
+alone; on the other three pairs drift costs it more. Even the direction of
+the network-versus-drift comparison, not just its size, depends on which
+pair is chosen. `../vantage/summary.md` pursues that with both axes
+measured from a single training collection.
 
 ## The training vantage matters more than the pair
 

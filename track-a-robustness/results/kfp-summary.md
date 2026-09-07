@@ -24,6 +24,11 @@ the brief complains about are not the problem; whatever noise exists in this
 literature is not coming from the forest's random state. Worth re-checking once
 the CNNs run, where seed variance is normally much larger.
 
+**Checked, and the expectation was wrong.** The CNNs are mostly *steadier* than
+k-FP, not noisier: DF's cross-network cell has sd 0.0021 against k-FP's 0.0036.
+The exception is RF at sd 0.0217, an order of magnitude above the rest and on
+exactly the cell the two-axis argument leans on. See `axes-table.md`.
+
 ## Against the paper: do not read this as a reproduction
 
 Their k-FP row is open-world F1 derived from π10 at a tuned threshold. Ours is

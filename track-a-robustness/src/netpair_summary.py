@@ -95,14 +95,15 @@ def main():
                    4: "fourth-worst", 5: "least degraded"}
         if len(uniq) == 1:
             rf_rank_sentence = (f"RF is the {ordinal[uniq[0]]} classifier on every one of "
-                                f"the four pairs, and is still the only one whose drift "
-                                f"robustness beats its network robustness.")
+                                f"the four pairs, and remains among the most "
+                                f"network-sensitive relative to its drift damage.")
         else:
             rf_rank_sentence = (f"RF ranks "
                                 f"{', '.join(ordinal[r] for r in uniq)} across the four "
-                                f"pairs (worst on {ranks.count(1)} of {len(ranks)}), and is "
-                                f"still the only classifier whose drift robustness beats its "
-                                f"network robustness.")
+                                f"pairs (worst on {ranks.count(1)} of {len(ranks)}), and "
+                                f"remains the most network-sensitive of the five relative "
+                                f"to its drift damage, an ordering that also holds from "
+                                f"both training vantages (see ../vantage/summary.md).")
         L += ["",
               "## What this does to the verdict",
               "",
@@ -125,7 +126,13 @@ def main():
               "",
               "The honest summary is that 'network-mismatch robustness' as the thesis",
               "measures it is one country pair, and at least for RF the choice of pair",
-              "carries most of the effect."]
+              "carries most of the effect.",
+              "",
+              "Note also that RF's network damage exceeds its drift damage on AU->CA",
+              "alone; on the other three pairs drift costs it more. Even the direction of",
+              "the network-versus-drift comparison, not just its size, depends on which",
+              "pair is chosen. `../vantage/summary.md` pursues that with both axes",
+              "measured from a single training collection."]
 
     # ---- training vantage, which turns out to matter more than the pair
     L += ["", "## The training vantage matters more than the pair", "",

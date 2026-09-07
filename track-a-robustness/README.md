@@ -8,11 +8,13 @@ robustness are distinct properties, and no current WF classifier has both.
 Classifiers in scope: k-FP, DF, Tik-Tok, RF, Holmes. All five ran.
 
 **Outcome.** No classifier is good at both axes, so the hypothesis holds in its
-weaker form. The stronger claim, that the axes are independent properties, rests
-almost entirely on RF: it is the one classifier that inverts, fourth of five
-against network mismatch and first against drift. Two are hurt more by changing
-country than by ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504
-against −0.403).
+weaker form. The stronger form does not survive intact. *Which* axis costs a
+classifier more turns out to be set by the training vantage rather than by the
+classifier: trained on AU, two of five are network-limited (RF and Holmes, not
+RF alone as the first draft of this file said); trained on UK, none of four are.
+What is invariant is the **ordering** by network sensitivity relative to drift
+damage, RF < k-FP < Tik-Tok < DF, identical from both vantages and across four
+country pairs. Full argument in the verdict, sections 4 and 5.
 
 ## Gate order, from the brief, and where each landed
 
@@ -34,11 +36,13 @@ against −0.403).
    axes matches theirs exactly, but that is corroboration and must not be quoted
    as reproduction.
    `results/vs-paper.md`.
-4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 105 result rows.
-   `results/axes-table.md`. Seed variance is not uniform: RF's cross-network
-   cell has sd 0.0217 against DF's 0.0021 on the same cell.
+4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 306 result rows
+   across 25 files. `results/axes-table.md`. Seed variance is not uniform: RF's
+   cross-network cell has sd 0.0217 against DF's 0.0021 on the same cell.
 5. **One scatter plot.** Done, `results/axes.png`, five points with error bars,
-   both axes labelled closed-world in the figure itself.
+   both axes labelled closed-world in the figure itself. Read it for the
+   *relative* positions only: section 5 of the verdict shows a classifier's
+   absolute coordinates move with the training vantage.
 
 Steps 1 and 3 were the real gates, and step 3 is the one that failed. It failed
 in the way step 1 predicted it would, which is why the run proceeded: the
@@ -49,8 +53,10 @@ scoring even though the cell values do not.
 
 ```
 src/     fetch and verify, loaders, the five classifiers, the runners, the plot
-data/    OSF traces, gitignored
+data/    OSF traces, gitignored, 8 collections and 3.0 GB
 results/ per-classifier JSON, the generated tables, the figure
+  netpairs/   four country pairs, section 4 of the verdict
+  vantage/    both axes from one vantage, and the same test from a second
 logs/    deltas.md (every deviation), paper-numbers.md, osf-inventory.md
 RUNBOOK-5090.md   what was run on the GPU box, and what it cost
 ```
