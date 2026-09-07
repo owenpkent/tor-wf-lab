@@ -18,10 +18,10 @@ components, so OSF renders no button. Email is the only route. And with both
 asks going to the same person, two emails would be two interruptions for one
 conversation.
 
-Draft 03 is complete. Nothing is bracketed, nothing needs editing: paste the
-body between the `---` rules into an email to taowang@sfu.ca with the subject
-line given at the top, and send. The affiliation reads "Independent researcher,
-unaffiliated".
+Draft 03 is complete. The affiliation line, its only bracketed field, now reads
+"Independent researcher, unaffiliated". Paste the body between the `---` rules
+into an email to `<seven-character full name>@sfu.ca`, decoded as described
+below, with the subject line given at the top, and send.
 
 ## Contact provenance
 

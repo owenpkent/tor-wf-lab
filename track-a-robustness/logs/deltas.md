@@ -7,7 +7,7 @@ One row per deviation, added as it happens rather than reconstructed at the end.
 |---|---|---|---|---|
 | 2026-09-06 | Hardware | Single RTX 5090, Linux | Ryzen 9 5900HX, 16 threads, no CUDA GPU | The 5090 is in the other machine. Only k-FP has run so far and it is CPU-only by design, so this cost nothing yet. The four CNNs are not run here. |
 | 2026-09-06 | World | Open world, π10 at r = 10, threshold tuned to maximize F1 | Closed world, macro F1 over the monitored classes | The real non-monitored background is DUA-gated and absent from OSF. See `osf-inventory.md`. **No number here is comparable to a number in their tables.** |
-| 2026-09-06 | Code | "Analysis code released" | Reimplemented | Nothing on OSF, no repo found, and the 9.9 GB OSF archive zip contains data only. Draft email `docs/correspondence/01-code-availability.md` is still unsent. |
+| 2026-09-06 | Code | "Analysis code released" | Reimplemented | Nothing on OSF, no repo found, and the 10.6 GB OSF archive zip contains data only. Draft email `docs/correspondence/01-code-availability.md` is still unsent. |
 | 2026-09-06 | k-FP features | "Feature Vector: 175 (max)", Hayes & Danezis 2016 | 175-dimensional reimplementation, composition documented at the top of `src/kfp.py` | Their exact feature list is not printed in the thesis and their code is unavailable. Dimension matches; the individual features are not guaranteed to. |
 | 2026-09-06 | k-FP classifier stage | Random forest, n_est = 1000, feature importances used | `RandomForestClassifier(n_estimators=1000)`, prediction taken directly | n_est matches Table C.1. k-FP proper turns RF leaves into fingerprints and runs k-NN for the open-world decision; with no open world there is nothing for that stage to do. Feature-importance selection not applied, since it exists to shrink the vector and we are not tuning. |
 | 2026-09-06 | Label space | 112 sites nominal | Per-axis intersection: 103 classes cross-network, 106 drift | Sites disappear between collections. Six (16, 40, 60, 76, 95, 100) are gone from the UK month-6 set, and site 100 is already missing from AU month 0. Scoring against classes that cannot occur would depress recall for a reason unrelated to drift. |
@@ -56,7 +56,7 @@ One row per deviation, added as it happens rather than reconstructed at the end.
   `run_torch.py` records `device` and `torch` in its JSON so the two cannot be
   confused later.
 - Their code: not released. Nothing pulled.
-- Data: 29 `.npz` from `osf.io/9m8ea`, 9.9 GB, all openly downloadable, all 29
+- Data: 29 `.npz` from `osf.io/9m8ea`, 10.6 GB, all openly downloadable, all 29
   verified against the authors' `pre-sha512sum.txt` / `post-sha512sum.txt`
   (`src/verify_osf.py`, 29 ok / 0 bad / 0 missing). The DUA-gated open-world
   background set is not present and was not requested.

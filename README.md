@@ -6,8 +6,11 @@ Two investigations into Tor website fingerprinting, run against Shadbeh, Khajavi
 really distinct properties. The other asks whether a guard relay can buy itself
 a better view of your browsing by being fast, and whether Tor could stop it.
 
-Both are finished. Every number below is reproducible from open data with
-`make`, and everything that could not be measured is labelled as such.
+Both are finished. Everything that could not be measured is labelled as such.
+`make` rebuilds the Track B measurements and figures and the k-FP numbers from
+open data, end to end; the four CNN classifiers need a GPU and the Shadow
+simulation needs Shadow, and both have their own runbooks. `make help` says
+which is which.
 
 ---
 
@@ -21,10 +24,14 @@ start of a load 45% of the time to owning it 89% of the time.
 ![First-segment ownership against guard latency advantage](track-b-conflux/results/fs-rate.png)
 
 That is measured on the authors' own released Conflux traces, using their own
-published detector. The detector scores exactly 1.0000 on non-Conflux control
-traces, where every load has one leg and so must be a first segment, and it
-independently reproduces their "about 65% of traces hold less than half a load"
-claim at 0.659.
+published detector, and two independent checks back it. The detector scores
+exactly 1.0000 on non-Conflux control traces, where every load has one leg and
+so must be a first segment. Separately, and without using the detector at all,
+counting cells against the single-leg control median of 4,542 reproduces their
+"about 65% of traces hold less than half a load" claim at 0.659; that one is
+derived by hand in
+[`track-b-conflux/notes/06-fs-kill-test.md`](track-b-conflux/notes/06-fs-kill-test.md)
+rather than emitted by a script.
 
 Unpatched tor 0.4.9.11 in the Shadow simulator shows the same bias from the
 other direction: two identical guards split a download 0.512 / 0.488, a coin
@@ -34,8 +41,11 @@ flip, and one advantaged guard takes 0.71 of it by 64 ms.
 
 **What it is worth, measured rather than assumed:** k-FP classifies 74% of the
 traces where the guard owns the first segment, against 37% of the rest. A 128 ms
-advantage multiplies *how often* the guard wins the start by 1.97, and its
-accuracy on the traces it wins by only 1.19. Ownership is the attack.
+advantage multiplies *how often* the guard wins the start by 1.97 and its
+accuracy on the traces it wins by only 1.19. Ownership is the attack. (Both
+figures are measured on k-FP's held-out split, restricted to the 107 classes
+present in all six conditions; the 0.448 -> 0.891 rates quoted above are for the
+whole collection, where the same multiplier is 1.99.)
 
 **So the fix is small.** If ownership is the whole attack, the code to change is
 the initial leg choice, one function at `conflux.c:600`. Holding the measured
@@ -59,16 +69,19 @@ Five classifiers, both axes, three seeds, closed world.
 
 No classifier is good at both, so the hypothesis holds in its weaker form. The
 stronger claim, that the axes are independent properties, rests almost entirely
-on RF: it is fourth of five against network mismatch and first against drift,
-and the only classifier hurt more by changing country than by ageing six months.
+on RF: it is the one classifier that inverts, fourth of five against network
+mismatch and first against drift. Two are hurt more by changing country than by
+ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504 against
+−0.403); the other three lose far more to drift.
 
 **What this run cannot claim.** The open-world background set is behind a data
 use agreement, so every number here is closed-world macro F1 and every number in
 the paper is open-world F1 at a tuned threshold. Different measurements. The
-drift column happens to land within 0.008 of the published month-2 values and
-the rank ordering matches theirs exactly, but that is corroboration and is not
-reproduction. The brief's "reproduce one paper number" gate is recorded as
-**unsatisfied**, because on open data it cannot be satisfied.
+drift column happens to land a mean absolute 0.008 from the published month-2
+values, with a worst cell of 0.018, and the rank ordering matches theirs
+exactly, but that is corroboration and is not reproduction. The brief's
+"reproduce one paper number" gate is recorded as **unsatisfied**, because on
+open data it cannot be satisfied.
 
 Full verdict: **[`docs/track-a-robustness-axes.md`](docs/track-a-robustness-axes.md)**.
 
@@ -78,16 +91,21 @@ Full verdict: **[`docs/track-a-robustness-axes.md`](docs/track-a-robustness-axes
 
 ```bash
 make venv        # .venv plus the pinned analysis stack
-make fs-figure   # end to end from nothing: fetch 1.7 GB, measure, plot
+make fs-figure   # end to end from nothing: fetch 1.7 GB, verify, measure, plot
 make figures     # redraw every figure from the JSON already in results/
 make help        # everything else
 ```
 
-The traces are not in the repo. `make data` fetches all 9.9 GB from
-`osf.io/9m8ea` and verifies all 29 files against the authors' sha512 lists.
-The four CNN classifiers need a GPU and their own runbook,
-`track-a-robustness/RUNBOOK-5090.md`. The Shadow experiment needs Shadow, tgen
-and tor on PATH, and lives in `track-b-conflux/shadow/`.
+The traces are not in the repo. `make data` fetches all 10.6 GB from
+`osf.io/9m8ea` and checks all 29 against the authors' sha512 lists; a bad
+digest, an absent listing or an incomplete download fails the target rather than
+being printed and passed over. Sizes here are decimal GB, matching what curl and
+OSF report.
+
+`make` covers Track B end to end and k-FP on both Track A axes. It does **not**
+cover the four CNN classifiers, which need a GPU and their own runbook
+(`track-a-robustness/RUNBOOK-5090.md`), or the Shadow experiment, which needs
+Shadow, tgen and tor on PATH and lives in `track-b-conflux/shadow/`.
 
 ---
 
@@ -98,9 +116,11 @@ and tor on PATH, and lives in `track-b-conflux/shadow/`.
 | A | Are network-mismatch and temporal-drift robustness distinct axes, with no classifier good at both? | Done. Five classifiers, 3 seeds, closed world. Gate 3 unsatisfiable on open data |
 | B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Done. Verdict go, narrowed. No Tor patch written, per the brief |
 
-Not done, and deliberately: no Tor patches, no open-world numbers, no Holmes on
-Track A until the authors' pipeline was available, and no claim that any
-closed-world number here is comparable to a published one.
+Not done, and deliberately: no Tor patches, no open-world numbers, and no claim
+that any closed-world number here is comparable to a published one. Holmes was
+originally out of scope, on the grounds that the thesis's Table C.1 is too thin
+to reimplement faithfully; it came back in when the authors' own pipeline turned
+out to be released as WFlib, so all five classifiers ran.
 
 ## Layout
 
@@ -108,7 +128,7 @@ closed-world number here is comparable to a published one.
 prompts/                    the two briefs, verbatim, treated as read-only
 track-a-robustness/
   src/                      fetch and verify, loaders, the five classifiers, runners, plot
-  data/                     OSF traces, gitignored, 9.9 GB
+  data/                     OSF traces, gitignored, 10.6 GB
   results/                  per-classifier JSON, generated tables, the scatter plot
   logs/                     deltas.md, paper-numbers.md, osf-inventory.md
   RUNBOOK-5090.md           what ran on the GPU box, and what it cost
@@ -199,7 +219,7 @@ matplotlib, no torch). Data lives in `track-a-robustness/data/`, gitignored.
    Result: ~10.6 GB of monitored traces are open and span AU/CA/UK across month
    0/2/6, but the open-world background set is DUA-gated for one year post
    release and is not even listed. Both axes are runnable closed-world only.
-3. ~~Stage the data.~~ Done. All 29 open `.npz` downloaded, 9.9 GB, all 29
+3. ~~Stage the data.~~ Done. All 29 open `.npz` downloaded, 10.6 GB, all 29
    verified against the authors' sha512 lists (`src/verify_osf.py`).
 4. ~~Decide: closed-world now, or request the DUA and wait.~~ Resolved by running
    it. Closed-world was the right call: the **rank ordering on both axes is
@@ -227,9 +247,9 @@ it.
 
 | Result | Write-up | Numbers | Code |
 |---|---|---|---|
-| Five classifiers, both axes | `docs/track-a-robustness-axes.md` | `track-a-robustness/results/axes-table.md` | `track-a-robustness/src/run_torch.py`, `run_kfp.py` |
+| Five classifiers, both axes | `docs/track-a-robustness-axes.md` | `track-a-robustness/results/axes-table.md` | `track-a-robustness/src/run_torch.py` (DF, Tik-Tok, RF), `run_kfp.py`, `run_holmes.py`; plotted by `plot_axes.py` |
 | Ours against the paper | same | `track-a-robustness/results/vs-paper.md` | `track-a-robustness/src/compare_to_paper.py` |
-| RF slot-size sweep | same | `track-a-robustness/results/rf-slot-sweep.md` | `track-a-robustness/src/sweep_summary.py` |
+| RF slot-size sweep | same | `track-a-robustness/results/rf-slot-sweep.md` | `track-a-robustness/src/run_torch.py rf --slots 300 / --slots 150`, tabulated by `sweep_summary.py` |
 | Ownership vs latency | `track-b-conflux/notes/06-fs-kill-test.md` | `track-b-conflux/results/fs-sweep.json` | `track-b-conflux/src/run_fs_sweep.py` |
 | What ownership is worth | `track-b-conflux/notes/07-fs-value-measured.md` | `track-b-conflux/results/fs-kfp.json` | `track-b-conflux/src/run_fs_kfp.py` |
 | Stock tor in Shadow | `track-b-conflux/notes/09-shadow-validation.md` | `track-b-conflux/results/shadow-sweep.json` | `track-b-conflux/shadow/` |
