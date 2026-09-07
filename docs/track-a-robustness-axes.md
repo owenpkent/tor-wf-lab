@@ -17,12 +17,14 @@ things. DF is the strongest against network mismatch (0.968) and gives up 0.331
 to six months of drift. RF is the strongest against drift (0.748) and gives up
 0.250 across networks. Nothing sits in the top-right of the scatter.
 
-Section 4 qualifies this substantially: the network axis as the thesis measures
-it is a single country pair, and it is the hardest of the four available, for
-every classifier. Section 5 then removes the vantage confound that qualification
-exposed, and the trade-off survives: measured from one training collection,
-classifiers still split cleanly into those hurt more by network mismatch (RF,
-Holmes) and those hurt more by drift (DF, Tik-Tok, k-FP).
+Sections 4 and 5 qualify this heavily, and were added after the original
+verdict. The network axis as the thesis measures it is a single country pair, and
+it is the hardest of the four available, for every classifier. Worse, *which* of
+the two axes costs a classifier more turns out to depend on where it was trained
+rather than on the classifier: from the AU vantage two of five are
+network-limited, from the UK vantage none are. What is stable is the **ordering**,
+by how network-sensitive a classifier is relative to its drift damage, which is
+identical from both vantages and across all four country pairs.
 
 **The stronger claim, that the two axes are genuinely independent properties, is
 carried almost entirely by RF.** Three of the five classifiers rank identically
@@ -38,7 +40,7 @@ in general.
 | | |
 |---|---|
 | GPU | RTX 5090, driver 610.88, torch 2.11.0+cu128, capability `(12, 0)`, `sm_120` present |
-| Data | 5 OSF collections, ~1.9 GB, extracted from the bulk archive, all 5 sha512-verified against the authors' lists |
+| Data | 8 OSF collections, ~3.1 GB, extracted from the bulk archive, all 8 sha512-verified against the authors' lists |
 | Protocol | 20% stratified in-distribution holdout per seed, seeds 0/1/2, identical 16,528 / 4,132 split for every classifier |
 | World | Closed. The open-world background set is DUA-gated and absent |
 
@@ -103,9 +105,10 @@ Two classifiers are hurt *more* by moving country than by ageing six months: RF
 (ratio 0.88) and Holmes (0.80), where the ratio is drift damage over network
 damage. For the other three, drift dominates, by 39.6x for DF, 13.4x for Tik-Tok
 and 2.9x for k-FP. That ordering, not the rank inversion, is the most robust
-distinction visible in the data, and it is the reason the stronger claim above
-is described as resting on RF's rank inversion rather than on the direction of
-the comparison, which two classifiers share.
+distinction in the data: it is why the stronger claim above rests on RF's rank
+inversion rather than on the direction of the comparison, which two classifiers
+share. Section 5 shows it is also the part that survives when the training
+vantage is varied.
 
 ## 2. Does the RF slot-size sweep explain its cross-network position away?
 
@@ -224,12 +227,16 @@ mechanism consistent with the data rather than a demonstrated cause; three
 vantages cannot separate load time from everything else that differs between
 countries, and the released traces do not record RTT.
 
-**What survives.** RF is still the only classifier whose drift robustness beats
-its network robustness, on every pair, so the qualitative trade-off that carries
-the two-axis claim is not an artefact of pair choice. What does not survive is
-the magnitude. A large part of what the thesis attributes to network-mismatch
+**What survives.** RF is consistently among the most network-sensitive
+classifiers relative to its drift damage, on every pair. What does not survive is
+the magnitude: a large part of what the thesis attributes to network-mismatch
 robustness is carried by the choice of training vantage, which is a property of
 the measurement setup and not of the classifier.
+
+Note also that RF's network damage exceeds its drift damage on AU->CA alone
+(−0.269 against −0.221); on the other three pairs drift costs it more. So even
+the direction of the comparison, not just its size, depends on which pair is
+chosen. Section 5 pursues that directly.
 
 **A confound this exposes in the main result.** The two axes in the main table
 are not measured from the same vantage: the cross-network axis trains on AU and
@@ -239,19 +246,21 @@ axis is measured under a handicap the drift axis does not carry. Some of the
 apparent distinctness of the two axes could be a vantage effect rather than an
 axis effect, and nothing in this run separates the two.
 
-## 5. Both axes from one vantage, with the confound removed
+## 5. Both axes from one vantage, and the same test from a second vantage
 
-Section 4 ended by noting that the two headline axes are not measured from the
-same training collection: the thesis's Table 4.1 trains on AU and Table 4.3 on
-UK, and AU-trained models degrade about 2.9x more in general. That entangles
-vantage with axis. This section removes the confound, and it is the cleanest
-test in this document. Detail in `track-a-robustness/results/vantage/summary.md`.
+Section 4 exposed a confound: the thesis's two headline axes do not share a
+training collection. Table 4.1 trains on AU and tests across networks, Table 4.3
+trains on UK and tests across time, and AU-trained models degrade about 2.9x more
+in general. This section removes the confound, then checks whether the answer it
+gives depends on which vantage was chosen. It does. Detail in
+`track-a-robustness/results/vantage/summary.md` and `results/vantage-uk/`.
 
-One training collection (post-Conflux AU month 0), one 20% anchor, one label
-space of 106 classes, three test cells scored against it: two network cells and
-the same AU vantage six months later. All five classifiers, 3 seeds.
+The design: one training collection, one 20% anchor, one label space, and both
+network and drift cells scored against it. Run twice, once from each vantage.
 
-| Classifier | anchor | ->CA | AU month 6 | net damage | drift damage | drift/net |
+**AU vantage** (106 classes, 3 seeds, all five classifiers):
+
+| Classifier | anchor | ->CA | AU month 6 | net | drift | drift/net |
 |---|---|---|---|---|---|---|
 | DF | 0.9739 | 0.8968 | 0.6213 | −0.077 | −0.353 | 4.57 |
 | Tik-Tok | 0.9731 | 0.8719 | 0.6307 | −0.101 | −0.342 | 3.39 |
@@ -259,25 +268,62 @@ the same AU vantage six months later. All five classifiers, 3 seeds.
 | Holmes | 0.9737 | 0.5185 | 0.5771 | −0.455 | −0.397 | 0.87 |
 | RF | 0.9689 | 0.7123 | 0.7649 | −0.257 | −0.204 | 0.79 |
 
-**The trade-off survives.** RF and Holmes are hurt more by changing network than
-by ageing six months; DF, Tik-Tok and k-FP the reverse. The split is clean, with
-a gap of 0.91 between the two groups and nothing in between. RF still moves from
-third on network to first on drift, and DF from first to third, which is the
-same inversion the main table shows, now measured without the confound.
+**UK vantage** (3 seeds; Holmes not run, see below):
 
-Rank correlation between the axes here is 0.50 (p = 0.39, n = 5). As in the main
-table, that is no evidence that one axis predicts the other, and n = 5 cannot
-establish independence either.
+| Classifier | anchor | ->CA | UK month 6 | net | drift | drift/net |
+|---|---|---|---|---|---|---|
+| DF | 0.9754 | 0.9219 | 0.6390 | −0.053 | −0.336 | 6.29 |
+| Tik-Tok | 0.9702 | 0.9125 | 0.6282 | −0.058 | −0.342 | 5.93 |
+| k-FP | 0.9451 | 0.8475 | 0.4805 | −0.098 | −0.465 | 4.76 |
+| RF | 0.9675 | 0.8910 | 0.7555 | −0.076 | −0.212 | 2.77 |
 
-**Drift is vantage-insensitive; network is not.** Comparing drift degradation
-measured from UK (the main table) against AU (here), the mean absolute
-difference is 0.019 and the worst is 0.041. Six months of drift costs a
-classifier about the same wherever it trained. Network mismatch does not: the
-same classifiers swing by roughly 3x with training vantage.
+### What does not survive
 
-That asymmetry cuts both ways for the thesis. Its drift numbers look robust to a
-design choice it never varied. Its network numbers are contingent on one, and it
-reports the most pessimistic setting of that choice.
+**Which axis costs a classifier more is not a property of the classifier.** From
+the AU vantage, two of five classifiers are network-dominant (ratio below 1).
+From the UK vantage, **none of the four are**; every ratio is between 2.8 and
+6.3. An earlier draft of this document claimed the AU result was the
+confound-free answer and that classifiers "split cleanly into two groups". That
+was wrong. The split is a property of the AU vantage, which section 4 had
+already identified as the pessimistic one for network mismatch, and it
+disappears entirely when the same test is run from UK.
+
+### What does survive
+
+**The ordering is invariant.** Ranking classifiers by drift damage over network
+damage, that is by how network-sensitive they are relative to how drift-sensitive:
+
+| | order, least drift-dominated first |
+|---|---|
+| AU vantage | RF < k-FP < Tik-Tok < DF |
+| UK vantage | RF < k-FP < Tik-Tok < DF |
+
+Identical, Spearman 1.000 over the four classifiers run on both. RF is the most
+network-sensitive relative to drift from either vantage and DF the least, and the
+absolute ratios shift together by roughly a factor of three without reordering.
+
+### What this does to the hypothesis
+
+Read as *"some classifiers are network-limited and others are drift-limited"*,
+the two-axis claim is **not supported**. Which group a classifier falls into is
+set by where it was trained, not by the classifier.
+
+Read as *"classifiers differ consistently and substantially in how much network
+mismatch costs them relative to drift"*, it **is supported**, and that ordering
+is the most stable quantity found anywhere in this run: unchanged across
+vantages, across the four country pairs of section 4, and between the closed
+world here and the thesis's open world.
+
+The practical consequence is that a two-axis scatter plot is a misleading way to
+present this. A classifier's position moves with the vantage; only its position
+*relative to other classifiers* is meaningful. `results/axes.png` should be read
+that way, and its absolute coordinates should not be quoted.
+
+**Holmes was not run on the UK vantage.** It is 22 of the 35 minutes the full
+grid costs, and the four classifiers already settle the question the run was
+asked. Its AU ratio of 0.87 is the second lowest, so it would be expected around
+3 to 5 on UK and drift-dominant like the rest, but that is an expectation and not
+a measurement.
 
 ## What would change this answer
 
@@ -291,9 +337,12 @@ reports the most pessimistic setting of that choice.
 - ~~**A second network pair.**~~ Done, see section 4, and it mattered more than
   expected: the training vantage carries about 3x more of the effect than the
   pair does.
-- ~~**Both axes from one vantage.**~~ Done, see section 5. The trade-off
-  survives the confound being removed, and drift turns out to be far less
-  sensitive to vantage than network mismatch is.
+- ~~**Both axes from one vantage.**~~ Done, and run from both vantages, see
+  section 5. It overturned the earlier conclusion: the two-group split is an AU
+  artefact, and only the ordering is vantage-invariant.
+- **Holmes on the UK vantage.** The one gap in the 5x2 grid, about 22 minutes.
+  Expected to be drift-dominant like the other four, which would make the
+  section 5 result unanimous rather than four-of-four.
 
 ## Reproducing
 
@@ -322,7 +371,11 @@ for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 
 python track-a-robustness/src/run_kfp.py 3 --axes vantage-au --tag vantage/kfp
 python track-a-robustness/src/run_holmes.py --seeds 3 --axes vantage-au --tag vantage/holmes
 python track-a-robustness/src/vantage_summary.py
+# the same test from the UK vantage, section 5
+for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 3 \
+  --axes vantage-uk --tag vantage-uk/$m; done
+python track-a-robustness/src/run_kfp.py 3 --axes vantage-uk --tag vantage-uk/kfp
 ```
 
-About 2 hours of GPU time end to end, dominated by Holmes at roughly 7.6 minutes
-per seed-axis for its four-stage pipeline. k-FP is CPU-only and ran on the laptop.
+About 3.5 hours of GPU time end to end, dominated by Holmes at roughly 7.6
+minutes per seed-axis for its four-stage pipeline. k-FP is CPU-only.
