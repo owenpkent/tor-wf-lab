@@ -1,0 +1,151 @@
+{
+ "classifier": "k-FP",
+ "world": "closed",
+ "n_estimators": 1000,
+ "rows": [
+  {
+   "axis": "vantage-uk",
+   "cell": "in-dist",
+   "seed": 0,
+   "accuracy": 0.9395026303204208,
+   "f1_macro": 0.9389247344270454,
+   "f1_micro": 0.9395026303204208,
+   "n_train": 16728,
+   "n_test": 4182,
+   "n_classes": 106,
+   "fit_seconds": 7.3
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "au",
+   "seed": 0,
+   "accuracy": 0.9130109670987039,
+   "f1_macro": 0.9061453579865707,
+   "f1_micro": 0.9130109670987039,
+   "n_train": 16728,
+   "n_test": 20060,
+   "n_classes": 106,
+   "fit_seconds": 7.3
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "ca",
+   "seed": 0,
+   "accuracy": 0.8532432812719853,
+   "f1_macro": 0.8449262895292413,
+   "f1_micro": 0.8532432812719853,
+   "n_train": 16728,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 7.3
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "month6",
+   "seed": 0,
+   "accuracy": 0.5336394393426777,
+   "f1_macro": 0.4810454389702955,
+   "f1_micro": 0.5336394393426777,
+   "n_train": 16728,
+   "n_test": 20690,
+   "n_classes": 106,
+   "fit_seconds": 7.3
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "in-dist",
+   "seed": 1,
+   "accuracy": 0.9481109516977523,
+   "f1_macro": 0.9484734500836892,
+   "f1_micro": 0.9481109516977523,
+   "n_train": 16728,
+   "n_test": 4182,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "au",
+   "seed": 1,
+   "accuracy": 0.9143070787637089,
+   "f1_macro": 0.9071625890370846,
+   "f1_micro": 0.9143070787637089,
+   "n_train": 16728,
+   "n_test": 20060,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "ca",
+   "seed": 1,
+   "accuracy": 0.8558697997279677,
+   "f1_macro": 0.8482390282028713,
+   "f1_micro": 0.8558697997279677,
+   "n_train": 16728,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "month6",
+   "seed": 1,
+   "accuracy": 0.5328661188980184,
+   "f1_macro": 0.4818865559841819,
+   "f1_micro": 0.5328661188980184,
+   "n_train": 16728,
+   "n_test": 20690,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "in-dist",
+   "seed": 2,
+   "accuracy": 0.9478718316594931,
+   "f1_macro": 0.947979924156485,
+   "f1_micro": 0.9478718316594931,
+   "n_train": 16728,
+   "n_test": 4182,
+   "n_classes": 106,
+   "fit_seconds": 6.8
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "au",
+   "seed": 2,
+   "accuracy": 0.9150049850448654,
+   "f1_macro": 0.9078185915695255,
+   "f1_micro": 0.9150049850448654,
+   "n_train": 16728,
+   "n_test": 20060,
+   "n_classes": 106,
+   "fit_seconds": 6.8
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "ca",
+   "seed": 2,
+   "accuracy": 0.8567609399183903,
+   "f1_macro": 0.8493763927494808,
+   "f1_micro": 0.8567609399183903,
+   "n_train": 16728,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 6.8
+  },
+  {
+   "axis": "vantage-uk",
+   "cell": "month6",
+   "seed": 2,
+   "accuracy": 0.5311261478975351,
+   "f1_macro": 0.47854672373181417,
+   "f1_micro": 0.5311261478975351,
+   "n_train": 16728,
+   "n_test": 20690,
+   "n_classes": 106,
+   "fit_seconds": 6.8
+  }
+ ]
+}
