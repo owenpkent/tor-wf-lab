@@ -1,9 +1,9 @@
 Finished writeups land here.
 
 - **Track A**, `track-a-robustness-axes.md`. Are network-mismatch and
-  temporal-drift robustness distinct axes? Five classifiers, both axes, 3 seeds,
-  closed world, plus four country pairs and the same test from two training
-  vantages. Verdict: no classifier is good at both; the axes are distinct as an
+  temporal-drift robustness distinct axes? Five classifiers, both axes, closed
+  world, 3 seeds each and 10 for RF, plus four country pairs and the same test
+  from two training vantages. Verdict: no classifier is good at both; the axes are distinct as an
   ordering but not as a categorisation, because which axis limits a classifier is
   set by where it was trained and which country it is tested against. Sections 4 and 5 were added after the original
   verdict and overturn part of it. Numbers, figure and sweeps live in

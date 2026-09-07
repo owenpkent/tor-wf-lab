@@ -43,6 +43,16 @@ Both are deviations from the authors' `assert >= 12`; see `deltas.md`.
 | 1 | none | 60: 3 |
 | 2 | none | 60: 3 |
 
+## `results/vantage-uk/holmes.json`
+
+**vantage-uk** (106 classes)
+
+| seed | skipped (class: valid n) | short (class: attributed n) |
+|---|---|---|
+| 0 | none | none |
+| 1 | none | none |
+| 2 | none | none |
+
 ## `results/vantage/holmes.json`
 
 **vantage-au** (106 classes)

@@ -63,7 +63,7 @@ dispatched at `conflux.c:697`, and unreachable. No UX value maps to it.
 
 ## Are the two robustness axes really distinct?
 
-Five classifiers, both axes, three seeds, closed world.
+Five classifiers, both axes, closed world. Three seeds each, ten for RF.
 
 ![Cross-network F1 against six-month drift F1](track-a-robustness/results/axes.png)
 
@@ -71,7 +71,7 @@ No classifier is good at both, so the hypothesis holds in its weaker form. The
 stronger claim, that the axes are independent properties, rests almost entirely
 on RF: it is the one classifier that inverts, fourth of five against network
 mismatch and first against drift. Two are hurt more by changing country than by
-ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504 against
+ageing six months, RF (−0.243 against −0.216) and Holmes (−0.504 against
 −0.403); the other three lose far more to drift. Two follow-ups, both below,
 qualify that table heavily and limit what it can support.
 
@@ -92,7 +92,9 @@ country rather than by the classifier: of the four vantage-and-target cells
 measured, only AU->CA yields any network-limited classifier at all (2 of 5), and
 the other three yield none. What is invariant is the ordering by network
 sensitivity relative to drift, RF < k-FP < Tik-Tok < DF, identical in all four
-cells (pairwise Spearman 1.000).
+cells. That covers four of the five classifiers: Holmes takes a different place
+in each cell, so the ordering is a stable property of those four rather than of
+classifiers in general.
 `track-a-robustness/results/vantage/summary.md` and `results/vantage-uk/`.
 
 **What this run cannot claim.** The open-world background set is behind a data

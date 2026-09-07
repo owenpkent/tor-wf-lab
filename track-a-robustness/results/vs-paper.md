@@ -12,14 +12,14 @@ errors, and agreement is not reproduction.
 | k-FP | 0.430 | 0.797 | +0.367 | 0.761 | 0.762 | +0.001 | 0.547 | 0.487 | -0.060 |
 | DF | 0.939 | 0.967 | +0.028 | 0.854 | 0.853 | -0.001 | 0.685 | 0.647 | -0.038 |
 | Tik-Tok | 0.872 | 0.948 | +0.076 | 0.827 | 0.845 | +0.018 | 0.653 | 0.622 | -0.031 |
-| RF | 0.046 | 0.718 | +0.672 | 0.907 | 0.891 | -0.016 | 0.754 | 0.748 | -0.006 |
+| RF | 0.046 | 0.724 | +0.678 | 0.907 | 0.891 | -0.016 | 0.754 | 0.753 | -0.001 |
 | Holmes | 0.009 | 0.453 | +0.444 | 0.740 | 0.733 | -0.007 | 0.622 | 0.574 | -0.048 |
 
 Mean absolute difference from the published number:
 
-- cross-network: **0.318**
+- cross-network: **0.319**
 - drift month 2: **0.008**
-- drift month 6: **0.037**
+- drift month 6: **0.036**
 
 The drift column lands close to the published values and the
 cross-network column does not. That is the pattern you would predict if

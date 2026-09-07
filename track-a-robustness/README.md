@@ -10,11 +10,13 @@ Classifiers in scope: k-FP, DF, Tik-Tok, RF, Holmes. All five ran.
 **Outcome.** No classifier is good at both axes, so the hypothesis holds in its
 weaker form. The stronger form does not survive intact. *Which* axis costs a
 classifier more turns out to be set by the training vantage rather than by the
-classifier: trained on AU, two of five are network-limited (RF and Holmes, not
-RF alone as the first draft of this file said); trained on UK, none of four are.
-What is invariant is the **ordering** by network sensitivity relative to drift
-damage, RF < k-FP < Tik-Tok < DF, identical from both vantages and across four
-country pairs. Full argument in the verdict, sections 4 and 5.
+classifier: of the four vantage-and-target cells, only AU->CA is network-limited
+for anyone, and there for two of five (RF and Holmes, not RF alone as the first
+draft of this file said). What is invariant is the **ordering** by network
+sensitivity relative to drift damage, RF < k-FP < Tik-Tok < DF, identical in all
+four cells and across four country pairs, but that covers four of the five:
+Holmes takes a different place in each cell. Full argument in the verdict,
+sections 4 and 5.
 
 ## Gate order, from the brief, and where each landed
 
@@ -36,10 +38,12 @@ country pairs. Full argument in the verdict, sections 4 and 5.
    axes matches theirs exactly, but that is corroboration and must not be quoted
    as reproduction.
    `results/vs-paper.md`.
-4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 303 result rows
-   across 23 files, plus 3 rows in the two `results/scratch/` gate checks.
-   `results/axes-table.md`. Seed variance is not uniform: RF's
-   cross-network cell has sd 0.0217 against DF's 0.0021 on the same cell.
+4. **Both axes, 3+ seeds, variance reported.** Done. 3 seeds and 10 for RF, 350
+   result rows across 24 files, plus 3 rows in the two `results/scratch/` gate
+   checks. `results/axes-table.md`, which states the seed count per cell. Seed
+   variance is not uniform: RF's cross-network cell has sd 0.0190 over ten seeds
+   against DF's 0.0021 over three on the same cell, which is why RF alone was
+   rerun at ten.
 5. **One scatter plot.** Done, `results/axes.png`, five points with error bars,
    both axes labelled closed-world in the figure itself. Read it for the
    *relative* positions only: section 5 of the verdict shows a classifier's
