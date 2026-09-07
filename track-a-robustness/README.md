@@ -9,9 +9,10 @@ Classifiers in scope: k-FP, DF, Tik-Tok, RF, Holmes. All five ran.
 
 **Outcome.** No classifier is good at both axes, so the hypothesis holds in its
 weaker form. The stronger claim, that the axes are independent properties, rests
-almost entirely on RF: it is fourth of five against network mismatch and first
-against drift, and the only classifier hurt more by changing country than by
-ageing six months.
+almost entirely on RF: it is the one classifier that inverts, fourth of five
+against network mismatch and first against drift. Two are hurt more by changing
+country than by ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504
+against −0.403).
 
 ## Gate order, from the brief, and where each landed
 
@@ -28,9 +29,10 @@ ageing six months.
 3. **Reproduce one paper number.** **Not satisfied, and cannot be on open data.**
    Every number here is closed-world macro F1; every number in their tables is
    open-world F1 from a tuned threshold against the background set. Different
-   measurements. The drift column nonetheless lands within 0.008 of the
-   published month-2 values, and the rank ordering on both axes matches theirs
-   exactly, but that is corroboration and must not be quoted as reproduction.
+   measurements. The drift column nonetheless lands a mean absolute 0.008 from
+   the published month-2 values, worst cell 0.018, and the rank ordering on both
+   axes matches theirs exactly, but that is corroboration and must not be quoted
+   as reproduction.
    `results/vs-paper.md`.
 4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 105 result rows.
    `results/axes-table.md`. Seed variance is not uniform: RF's cross-network

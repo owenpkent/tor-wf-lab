@@ -92,10 +92,13 @@ worst-case degradation belongs to RF at −0.250, and three of the five exceed
 −0.35. There is no classifier in this set that is simultaneously robust to both
 perturbations, which is what the brief asked.
 
-RF is also the only classifier that is hurt *more* by moving country than by
-ageing six months. For DF, Tik-Tok and k-FP, drift is 41x, 14x and 2.9x
-more damaging than network mismatch respectively. That asymmetry, not the rank inversion, is
-the most robust distinction visible in the data.
+Two classifiers are hurt *more* by moving country than by ageing six months: RF
+(ratio 0.88) and Holmes (0.80), where the ratio is drift damage over network
+damage. For the other three, drift dominates, by 39.6x for DF, 13.4x for Tik-Tok
+and 2.9x for k-FP. That ordering, not the rank inversion, is the most robust
+distinction visible in the data, and it is the reason the stronger claim above
+is described as resting on RF's rank inversion rather than on the direction of
+the comparison, which two classifiers share.
 
 ## 2. Does the RF slot-size sweep explain its cross-network position away?
 

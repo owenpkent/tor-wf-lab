@@ -4,12 +4,21 @@
 Resumable (HTTP range), skips files already at the manifest size. Priority
 files first so the two-axis closed-world run can start before the full 10.6 GB
 has landed. Verification is a separate step, see verify_osf.py.
+
+Exits non-zero if any file this run was asked for did not end up at its manifest
+size, so `make data` fails instead of handing a truncated .npz to a trainer.
+
+The two sha512 listings are always fetched, whatever patterns are given: they
+are a few kilobytes each, and without them verify_osf.py has nothing to check
+a filtered download against.
 """
 import json, os, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 MANIFEST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "osf-manifest.json")
+
+LISTINGS = ("pre-conflux/pre-sha512sum.txt", "post-conflux/post-sha512sum.txt")
 
 # The four cells the closed-world two-axis run needs, plus the checksum lists.
 PRIORITY = [
@@ -28,8 +37,10 @@ def order(files):
 def main():
     files = json.load(open(MANIFEST))
     only = sys.argv[1:] or None
+    failed = []
     for f in order(files):
-        if only and not any(pat in f["path"] for pat in only):
+        if only and f["path"] not in LISTINGS \
+                and not any(pat in f["path"] for pat in only):
             continue
         dest = os.path.join(DATA, f["path"])
         os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -41,8 +52,14 @@ def main():
         rc = subprocess.call(["curl", "-sS", "-L", "-C", "-", "--retry", "5",
                               "--retry-delay", "5", "-o", dest, f["download"]])
         got = os.path.getsize(dest) if os.path.exists(dest) else 0
-        status = "ok" if got == f["size"] else f"SIZE MISMATCH got {got:,}"
+        status = "ok" if got == f["size"] and rc == 0 else f"SIZE MISMATCH got {got:,}"
         print(f"[done] {f['path']}  rc={rc} {status}", flush=True)
+        if got != f["size"] or rc != 0:
+            failed.append(f["path"])
+    if failed:
+        print(f"\n{len(failed)} file(s) incomplete: " + ", ".join(failed), flush=True)
+        return 1
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

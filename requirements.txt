@@ -1,12 +1,22 @@
-# Analysis stack. Pinned to what the results in results/ were produced with.
+# Analysis stack. Pinned to what the results in results/ were produced with,
+# read off `pip list` in the environment that produced them.
 numpy==2.5.3
 scipy==1.18.1
 scikit-learn==1.9.0
 matplotlib==3.11.1
-joblib==1.5.2
+joblib==1.6.0
 
-# The four CNN classifiers need torch. CPU wheels are enough to run the code;
-# the published numbers came from a 5090 on cu128. See track-a-robustness/
-# RUNBOOK-5090.md before training anything.
+# joblib and scipy are both transitive scikit-learn dependencies. They are
+# pinned rather than left to the resolver because they are what the committed
+# numbers were produced against, and joblib in particular is imported directly:
+# kfp.py parallelises its k-NN through it, as a deferred import inside the
+# function rather than at the top of the file.
+
+# The four CNN classifiers need torch, and Holmes needs SupConLoss from
+# pytorch-metric-learning. Neither is installed here: CPU wheels are enough to
+# run the code, the published numbers came from a 5090 on cu128, and the index
+# URL differs per platform. See track-a-robustness/RUNBOOK-5090.md before
+# training anything.
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128
+#   pip install pytorch-metric-learning==2.9.0
