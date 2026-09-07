@@ -19,7 +19,10 @@ to six months of drift. RF is the strongest against drift (0.748) and gives up
 
 Section 4 qualifies this substantially: the network axis as the thesis measures
 it is a single country pair, and it is the hardest of the four available, for
-every classifier.
+every classifier. Section 5 then removes the vantage confound that qualification
+exposed, and the trade-off survives: measured from one training collection,
+classifiers still split cleanly into those hurt more by network mismatch (RF,
+Holmes) and those hurt more by drift (DF, Tik-Tok, k-FP).
 
 **The stronger claim, that the two axes are genuinely independent properties, is
 carried almost entirely by RF.** Three of the five classifiers rank identically
@@ -236,6 +239,46 @@ axis is measured under a handicap the drift axis does not carry. Some of the
 apparent distinctness of the two axes could be a vantage effect rather than an
 axis effect, and nothing in this run separates the two.
 
+## 5. Both axes from one vantage, with the confound removed
+
+Section 4 ended by noting that the two headline axes are not measured from the
+same training collection: the thesis's Table 4.1 trains on AU and Table 4.3 on
+UK, and AU-trained models degrade about 2.9x more in general. That entangles
+vantage with axis. This section removes the confound, and it is the cleanest
+test in this document. Detail in `track-a-robustness/results/vantage/summary.md`.
+
+One training collection (post-Conflux AU month 0), one 20% anchor, one label
+space of 106 classes, three test cells scored against it: two network cells and
+the same AU vantage six months later. All five classifiers, 3 seeds.
+
+| Classifier | anchor | ->CA | AU month 6 | net damage | drift damage | drift/net |
+|---|---|---|---|---|---|---|
+| DF | 0.9739 | 0.8968 | 0.6213 | −0.077 | −0.353 | 4.57 |
+| Tik-Tok | 0.9731 | 0.8719 | 0.6307 | −0.101 | −0.342 | 3.39 |
+| k-FP | 0.9440 | 0.7074 | 0.5218 | −0.237 | −0.422 | 1.78 |
+| Holmes | 0.9737 | 0.5185 | 0.5771 | −0.455 | −0.397 | 0.87 |
+| RF | 0.9689 | 0.7123 | 0.7649 | −0.257 | −0.204 | 0.79 |
+
+**The trade-off survives.** RF and Holmes are hurt more by changing network than
+by ageing six months; DF, Tik-Tok and k-FP the reverse. The split is clean, with
+a gap of 0.91 between the two groups and nothing in between. RF still moves from
+third on network to first on drift, and DF from first to third, which is the
+same inversion the main table shows, now measured without the confound.
+
+Rank correlation between the axes here is 0.50 (p = 0.39, n = 5). As in the main
+table, that is no evidence that one axis predicts the other, and n = 5 cannot
+establish independence either.
+
+**Drift is vantage-insensitive; network is not.** Comparing drift degradation
+measured from UK (the main table) against AU (here), the mean absolute
+difference is 0.019 and the worst is 0.041. Six months of drift costs a
+classifier about the same wherever it trained. Network mismatch does not: the
+same classifiers swing by roughly 3x with training vantage.
+
+That asymmetry cuts both ways for the thesis. Its drift numbers look robust to a
+design choice it never varied. Its network numbers are contingent on one, and it
+reports the most pessimistic setting of that choice.
+
 ## What would change this answer
 
 - **The open-world background set.** Every caveat above traces to its absence.
@@ -248,10 +291,9 @@ axis effect, and nothing in this run separates the two.
 - ~~**A second network pair.**~~ Done, see section 4, and it mattered more than
   expected: the training vantage carries about 3x more of the effect than the
   pair does.
-- **Both axes from one vantage.** The largest open confound. The network axis
-  trains on AU and the drift axis on UK, so vantage and axis are entangled. The
-  archive holds `post-month6-cfx0-au`, which would allow an AU-trained drift
-  cell and a genuinely like-for-like scatter. About an hour.
+- ~~**Both axes from one vantage.**~~ Done, see section 5. The trade-off
+  survives the confound being removed, and drift turns out to be far less
+  sensitive to vantage than network mismatch is.
 
 ## Reproducing
 
@@ -274,6 +316,12 @@ for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 
 python track-a-robustness/src/run_kfp.py 3 --axes cross-network-post-au cross-network-post-uk --tag netpairs/kfp
 python track-a-robustness/src/run_holmes.py --seeds 3 --axes cross-network-post-au cross-network-post-uk --tag netpairs/holmes
 python track-a-robustness/src/netpair_summary.py
+# both axes from one vantage, section 5
+for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 3 \
+  --axes vantage-au --tag vantage/$m; done
+python track-a-robustness/src/run_kfp.py 3 --axes vantage-au --tag vantage/kfp
+python track-a-robustness/src/run_holmes.py --seeds 3 --axes vantage-au --tag vantage/holmes
+python track-a-robustness/src/vantage_summary.py
 ```
 
 About 2 hours of GPU time end to end, dominated by Holmes at roughly 7.6 minutes
