@@ -20,6 +20,7 @@ matter.
 
 | Classifier | anchor | ->AU | ->CA | UK month 6 | drift/->AU | drift/->CA |
 |---|---|---|---|---|---|---|
+| Holmes | 0.9729 | 0.9072 +/- 0.0105 (-0.066) | 0.9024 +/- 0.0016 (-0.070) | 0.5477 +/- 0.0222 (-0.425) | 6.47 | 6.03 |
 | RF | 0.9675 | 0.9480 +/- 0.0008 (-0.019) | 0.8910 +/- 0.0081 (-0.076) | 0.7555 +/- 0.0049 (-0.212) | 10.87 | 2.77 |
 | k-FP | 0.9451 | 0.9070 +/- 0.0007 (-0.038) | 0.8475 +/- 0.0019 (-0.098) | 0.4805 +/- 0.0014 (-0.465) | 12.20 | 4.76 |
 | Tik-Tok | 0.9702 | 0.9584 +/- 0.0021 (-0.012) | 0.9125 +/- 0.0011 (-0.058) | 0.6282 +/- 0.0074 (-0.342) | 28.87 | 5.93 |
@@ -35,8 +36,8 @@ count depends on which one is read:
 |---|---|---|
 | AU -> CA | **2 of 5** | 0.79 to 4.57 |
 | AU -> UK | **0 of 5** | 1.57 to 26.99 |
-| UK -> AU | **0 of 4** | 10.87 to 40.55 |
-| UK -> CA | **0 of 4** | 2.77 to 6.29 |
+| UK -> AU | **0 of 5** | 6.47 to 40.55 |
+| UK -> CA | **0 of 5** | 2.77 to 6.29 |
 
 Only **AU -> CA** produces any network-limited classifier at all, 2 of 5.
 That is the single cell `netpairs/summary.md` finds hardest for every
@@ -52,7 +53,7 @@ comparison and then drew a conclusion from inside the pessimistic vantage,
 and within that vantage it read only the pessimistic of the two network
 cells that had been measured.
 
-## What does survive: the ordering
+## The ordering, and how much of it is invariant
 
 Ranking classifiers by how network-sensitive they are relative to their
 drift damage, least drift-dominated first:
@@ -61,14 +62,19 @@ drift damage, least drift-dominated first:
 |---|---|
 | AU -> CA | RF < Holmes < k-FP < Tik-Tok < DF |
 | AU -> UK | Holmes < RF < k-FP < Tik-Tok < DF |
-| UK -> AU | RF < k-FP < Tik-Tok < DF |
-| UK -> CA | RF < k-FP < Tik-Tok < DF |
+| UK -> AU | Holmes < RF < k-FP < Tik-Tok < DF |
+| UK -> CA | RF < k-FP < Tik-Tok < Holmes < DF |
 
-Identical across all 4 cells, over the 4 classifiers run on every one of them.
-Pairwise Spearman 1.000 to 1.000. The absolute ratios
-shift together by up to an order of magnitude without reordering.
-RF is the most network-sensitive relative to drift in every cell,
-and DF the least.
+**Not identical.** Over the 5 classifiers run in every cell there are 3
+distinct orders across the 4, pairwise Spearman 0.400 to 1.000.
+
+What is invariant is the ordering of **RF < k-FP < Tik-Tok < DF**, the same in
+all 4 cells, with the absolute ratios shifting together by up to an order of
+magnitude without reordering. Holmes moves against that ordering:
+Holmes is second in AU->CA, first in AU->UK, first in UK->AU and fourth in UK->CA.
+
+RF is the most network-sensitive relative to drift in
+every cell, of the 4 that hold their order, and DF the least.
 
 ## What this means for the hypothesis
 
@@ -77,17 +83,15 @@ the two-axis claim is **not supported**: which group a classifier lands in
 is a fact about the measurement setup.
 
 Read as *classifiers differ consistently in how much network mismatch costs
-them relative to drift*, it **is supported**, and that ordering is the most
-stable quantity in this whole investigation. It is unchanged across every
-vantage and target measured here, across the four country pairs of
-`netpairs/summary.md`, and between this closed world and the thesis's open
+them relative to drift*, it **is supported for most of the set but not all
+of it**. RF < k-FP < Tik-Tok < DF hold that order in every cell measured, and
+Holmes does not, so it is a real
+and stable property of those classifiers rather than of classifiers in
+general. It is still the most stable quantity found anywhere in this
+investigation: unchanged across the four country pairs of
+`netpairs/summary.md` and between this closed world and the thesis's open
 world.
 
 It follows that a two-axis scatter plot is a misleading way to present
 this. A classifier's absolute position moves with the vantage and with the
 target country; only its position relative to the others is meaningful.
-
-**Holmes not run on the UK vantage.** It is the expensive
-classifier and the others settle the question; its AU ratios are among the
-lowest, so it would be expected to be drift-dominant on UK like the rest,
-but that is an expectation and not a measurement.

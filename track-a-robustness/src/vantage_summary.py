@@ -21,6 +21,7 @@ cell present is now read and reported, and the finding is computed per cell.
 Usage: python vantage_summary.py
 """
 import glob, json, os
+from itertools import combinations
 import numpy as np
 from scipy.stats import spearmanr
 
@@ -32,6 +33,18 @@ ANCHOR = "in-dist"
 VANTAGES = [("AU", os.path.join(RESULTS, "vantage"), "vantage-au", "AU month 6"),
             ("UK", os.path.join(RESULTS, "vantage-uk"), "vantage-uk", "UK month 6")]
 ORDER = ["k-FP", "DF", "Tik-Tok", "RF", "Holmes"]
+
+_NTH = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+        "eighth", "ninth", "tenth")
+
+
+def ordinal_pos(i):
+    return _NTH[i - 1] if i <= len(_NTH) else f"{i}th"
+
+
+def commas(items):
+    xs = list(items)
+    return " and ".join(xs) if len(xs) < 3 else ", ".join(xs[:-1]) + " and " + xs[-1]
 
 
 def load(d, axis):
@@ -175,9 +188,8 @@ def main():
     if len(orders) >= 2:
         common = [n for n in ORDER if all(n in o for o in orders.values())]
         reduced = {k: [n for n in o if n in common] for k, o in orders.items()}
-        identical = len({tuple(o) for o in reduced.values()}) == 1
 
-        L += ["## What does survive: the ordering", "",
+        L += ["## The ordering, and how much of it is invariant", "",
               "Ranking classifiers by how network-sensitive they are relative to their",
               "drift damage, least drift-dominated first:", "",
               "| Vantage -> target | order |", "|---|---|"]
@@ -185,31 +197,66 @@ def main():
             L.append(f"| {name} | {' < '.join(o)} |")
         L.append("")
 
-        if identical:
-            head = (f"Identical across all {len(orders)} cells, over the {len(common)} "
-                    f"classifiers run on")
-        else:
-            head = (f"Not identical: over the {len(common)} classifiers run on every cell "
-                    f"there are {len({tuple(o) for o in reduced.values()})} distinct orders "
-                    f"across the {len(orders)}")
+        # The full ordering is invariant only if every cell induces the same one.
+        # When it is not, the informative quantity is how much of it still is,
+        # so the largest invariant subset is searched for rather than the result
+        # being reported as a flat yes/no. Running Holmes on the UK vantage is
+        # what made this necessary: four classifiers hold their order in every
+        # cell and the fifth does not.
+        stable = tuple(common)
+        for k in range(len(common), 1, -1):
+            cands = sorted(c for c in combinations(common, k)
+                           if len({tuple(n for n in o if n in set(c))
+                                   for o in reduced.values()}) == 1)
+            if cands:
+                stable = cands[0]
+                break
+        # Present it in ranked order, not declaration order. Every cell induces
+        # the same order over this subset, so any one of them will do.
+        stable = tuple(n for n in next(iter(reduced.values())) if n in set(stable))
+        moved = [n for n in common if n not in stable]
+
         ratios = lambda key: [V[key.split(" -> ")[0]][n]["nets"]
                               [key.split(" -> ")[1].lower()]["ratio"] for n in common]
         keys = list(orders)
         rhos = [float(spearmanr(ratios(keys[i]), ratios(keys[j]))[0])
                 for i in range(len(keys)) for j in range(i + 1, len(keys))]
-        L += [f"{head} every one of them.",
-              f"Pairwise Spearman {min(rhos):.3f} to {max(rhos):.3f}. The absolute ratios",
-              "shift together by up to an order of magnitude without reordering."]
+
+        if not moved:
+            L += [f"Identical across all {len(orders)} cells, over the {len(common)} "
+                  f"classifiers run in every one of",
+                  f"them. Pairwise Spearman {min(rhos):.3f} to {max(rhos):.3f}. The absolute "
+                  f"ratios shift together by up to an",
+                  "order of magnitude without reordering."]
+        else:
+            n_distinct = len({tuple(o) for o in reduced.values()})
+            L += [f"**Not identical.** Over the {len(common)} classifiers run in every cell "
+                  f"there are {n_distinct}",
+                  f"distinct orders across the {len(orders)}, pairwise Spearman "
+                  f"{min(rhos):.3f} to {max(rhos):.3f}.",
+                  "",
+                  f"What is invariant is the ordering of **{' < '.join(stable)}**, the same in",
+                  f"all {len(orders)} cells, with the absolute ratios shifting together by up "
+                  f"to an order of",
+                  f"magnitude without reordering. {commas(moved)} "
+                  f"{'moves' if len(moved) == 1 else 'move'} against "
+                  f"{'that' if len(stable) else 'it'} ordering:"]
+            for n in moved:
+                L.append(f"{n} is " + commas(
+                    f"{ordinal_pos(o.index(n) + 1)} in {k.replace(' -> ', '->')}"
+                    for k, o in reduced.items()) + ".")
 
         # Which classifier heads and tails the ordering is computed, not asserted.
-        heads = {o[0] for o in reduced.values()}
-        tails = {o[-1] for o in reduced.values()}
+        heads = {tuple(n for n in o if n in stable)[0] for o in reduced.values()}
+        tails = {tuple(n for n in o if n in stable)[-1] for o in reduced.values()}
+        scope = "" if not moved else f" of the {len(stable)} that hold their order,"
         if len(heads) == 1 and len(tails) == 1:
-            L += [f"{next(iter(heads))} is the most network-sensitive relative to drift in "
-                  f"every cell,",
-                  f"and {next(iter(tails))} the least."]
+            L += ["",
+                  f"{next(iter(heads))} is the most network-sensitive relative to drift in",
+                  f"every cell,{scope} and {next(iter(tails))} the least."]
         else:
-            L += [f"The classifier at the head of the ordering is not the same in every cell "
+            L += ["",
+                  f"The classifier at the head of the ordering is not the same in every cell "
                   f"({', '.join(sorted(heads))}),",
                   f"and neither is the one at the tail ({', '.join(sorted(tails))})."]
         L += [""]
@@ -219,7 +266,7 @@ def main():
               "the two-axis claim is **not supported**: which group a classifier lands in",
               "is a fact about the measurement setup.",
               ""]
-        if identical:
+        if not moved:
             L += ["Read as *classifiers differ consistently in how much network mismatch costs",
                   "them relative to drift*, it **is supported**, and that ordering is the most",
                   "stable quantity in this whole investigation. It is unchanged across every",
@@ -229,8 +276,14 @@ def main():
                   ""]
         else:
             L += ["Read as *classifiers differ consistently in how much network mismatch costs",
-                  "them relative to drift*, it is supported only in part: the ordering is",
-                  "stable across most of the cells measured here but not all of them.",
+                  "them relative to drift*, it **is supported for most of the set but not all",
+                  f"of it**. {' < '.join(stable)} hold that order in every cell measured, and",
+                  f"{commas(moved)} {'does' if len(moved) == 1 else 'do'} not, so it is a real",
+                  "and stable property of those classifiers rather than of classifiers in",
+                  "general. It is still the most stable quantity found anywhere in this",
+                  "investigation: unchanged across the four country pairs of",
+                  "`netpairs/summary.md` and between this closed world and the thesis's open",
+                  "world.",
                   ""]
         L += ["It follows that a two-axis scatter plot is a misleading way to present",
               "this. A classifier's absolute position moves with the vantage and with the",

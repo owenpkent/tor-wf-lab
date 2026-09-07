@@ -92,7 +92,9 @@ country rather than by the classifier: of the four vantage-and-target cells
 measured, only AU->CA yields any network-limited classifier at all (2 of 5), and
 the other three yield none. What is invariant is the ordering by network
 sensitivity relative to drift, RF < k-FP < Tik-Tok < DF, identical in all four
-cells (pairwise Spearman 1.000).
+cells. That covers four of the five classifiers: Holmes takes a different place
+in each cell, so the ordering is a stable property of those four rather than of
+classifiers in general.
 `track-a-robustness/results/vantage/summary.md` and `results/vantage-uk/`.
 
 **What this run cannot claim.** The open-world background set is behind a data

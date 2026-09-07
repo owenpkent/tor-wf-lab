@@ -24,8 +24,10 @@ the two axes costs a classifier more turns out to depend on the training vantage
 and the target country rather than on the classifier: of the four
 vantage-and-target cells measured, only AU->CA yields any network-limited
 classifier at all, 2 of 5, and the other three yield none. What is stable is the
-**ordering**, by how network-sensitive a classifier is relative to its drift
-damage, which is identical in all four cells and across all four country pairs.
+**ordering** by how network-sensitive a classifier is relative to its drift
+damage, but only for four of the five: RF < k-FP < Tik-Tok < DF is identical in
+all four cells and across all four country pairs, while Holmes takes a different
+place in each cell.
 
 **The stronger claim, that the two axes are genuinely independent properties, is
 carried almost entirely by RF.** Three of the five classifiers rank identically
@@ -291,7 +293,7 @@ network-pessimistic cell and reported it as the vantage's answer.
 | Holmes | 0.9737 | 0.5185 (−0.455) | 0.7218 (−0.252) | 0.5771 (−0.397) | 0.87 | 1.57 |
 | RF | 0.9689 | 0.7123 (−0.257) | 0.9094 (−0.059) | 0.7649 (−0.204) | 0.79 | 3.43 |
 
-**UK vantage** (106 classes, 3 seeds; Holmes not run, see below):
+**UK vantage** (106 classes, 3 seeds, all five classifiers):
 
 | Classifier | anchor | ->AU | ->CA | UK month 6 | drift/->AU | drift/->CA |
 |---|---|---|---|---|---|---|
@@ -299,6 +301,7 @@ network-pessimistic cell and reported it as the vantage's answer.
 | Tik-Tok | 0.9702 | 0.9584 (−0.012) | 0.9125 (−0.058) | 0.6282 (−0.342) | 28.87 | 5.93 |
 | k-FP | 0.9451 | 0.9070 (−0.038) | 0.8475 (−0.098) | 0.4805 (−0.465) | 12.20 | 4.76 |
 | RF | 0.9675 | 0.9480 (−0.019) | 0.8910 (−0.076) | 0.7555 (−0.212) | 10.87 | 2.77 |
+| Holmes | 0.9729 | 0.9072 (−0.066) | 0.9024 (−0.070) | 0.5477 (−0.425) | 6.47 | 6.03 |
 
 ### What does not survive
 
@@ -310,8 +313,8 @@ the four (vantage, target) cells measured:
 |---|---|---|
 | AU -> CA | **2 of 5** | 0.79 to 4.57 |
 | AU -> UK | 0 of 5 | 1.57 to 26.99 |
-| UK -> AU | 0 of 4 | 10.87 to 40.55 |
-| UK -> CA | 0 of 4 | 2.77 to 6.29 |
+| UK -> AU | 0 of 5 | 6.47 to 40.55 |
+| UK -> CA | 0 of 5 | 2.77 to 6.29 |
 
 Only AU->CA produces a network-limited classifier at all, and that is the single
 cell section 4 finds hardest for every classifier tested. An earlier draft of
@@ -321,23 +324,35 @@ its conclusion from inside the pessimistic vantage, and within that vantage from
 the pessimistic of the two network cells that had been measured. The split
 disappears in all three other cells.
 
-### What does survive
+### What survives, and how much of it
 
-**The ordering is invariant.** Ranking classifiers by drift damage over network
-damage, that is by how network-sensitive they are relative to how drift-sensitive:
+**Four of the five hold their order in every cell; the fifth does not.** Ranking
+classifiers by drift damage over network damage, that is by how network-sensitive
+they are relative to how drift-sensitive:
 
 | Vantage -> target | order, least drift-dominated first |
 |---|---|
 | AU -> CA | RF < Holmes < k-FP < Tik-Tok < DF |
 | AU -> UK | Holmes < RF < k-FP < Tik-Tok < DF |
-| UK -> AU | RF < k-FP < Tik-Tok < DF |
-| UK -> CA | RF < k-FP < Tik-Tok < DF |
+| UK -> AU | Holmes < RF < k-FP < Tik-Tok < DF |
+| UK -> CA | RF < k-FP < Tik-Tok < Holmes < DF |
 
-Identical over the four classifiers run in every cell, pairwise Spearman 1.000.
-RF is the most network-sensitive relative to drift in every cell and DF the
-least, while the absolute ratios shift together by up to an order of magnitude
-without reordering. Holmes, run only from AU, is the one classifier whose place
-moves: it leads the ordering against ->UK and sits second against ->CA.
+Three distinct orders across the four cells, pairwise Spearman 0.400 to 1.000.
+This is weaker than an earlier draft of this section claimed, and the reason is
+the Holmes run that closed the 5x2 grid: with only four classifiers in every
+cell the orderings were identical, and the fifth breaks the identity.
+
+**RF < k-FP < Tik-Tok < DF is invariant**, the same in all four cells, with the
+absolute ratios shifting together by up to an order of magnitude without
+reordering. RF is the most network-sensitive of those four relative to drift in
+every cell and DF the least. **Holmes is what moves**: second in AU->CA, first in
+AU->UK, first in UK->AU and fourth in UK->CA. It is also the classifier with the
+largest network damage anywhere in the grid (−0.455 on AU->CA), so it sits at the
+end of the range where the ratio is most sensitive to the cell.
+
+The honest reading is that the ordering is a real and stable property of those
+four classifiers rather than a law about classifiers in general, and that n = 5
+is not enough to tell which of the two it looked like.
 
 ### What this does to the hypothesis
 
@@ -347,21 +362,26 @@ set by where it was trained and which country it was tested against, not by the
 classifier.
 
 Read as *"classifiers differ consistently and substantially in how much network
-mismatch costs them relative to drift"*, it **is supported**, and that ordering
-is the most stable quantity found anywhere in this run: unchanged across all
-four vantage-and-target cells above, across the four country pairs of section 4,
-and between the closed world here and the thesis's open world.
+mismatch costs them relative to drift"*, it **is supported for four of the five
+and not for all of them**. RF < k-FP < Tik-Tok < DF is unchanged across all four
+vantage-and-target cells above, across the four country pairs of section 4, and
+between the closed world here and the thesis's open world, which still makes it
+the most stable quantity found anywhere in this run. Holmes does not hold a place
+in it. So the ordering is a property of those four classifiers, not a law about
+classifiers, and n = 5 cannot distinguish the two.
 
 The practical consequence is that a two-axis scatter plot is a misleading way to
 present this. A classifier's position moves with the vantage and with the target
-country; only its position *relative to other classifiers* is meaningful. `results/axes.png` should be read
-that way, and its absolute coordinates should not be quoted.
+country; only its position *relative to other classifiers* is meaningful, and
+even that holds only for the four. `results/axes.png` should be read that way,
+and its absolute coordinates should not be quoted.
 
-**Holmes was not run on the UK vantage.** It is 22 of the 35 minutes the full
-grid costs, and the four classifiers already settle the question the run was
-asked. Its AU ratios of 0.87 and 1.57 are among the lowest, so it would be
-expected to be drift-dominant on UK like the rest, but that is an expectation and not
-a measurement.
+**Holmes on the UK vantage has now been run**, closing the 5x2 grid, and it is
+what turned "the ordering is invariant" into "four fifths of it is". It was 22
+of the 35 minutes the full grid costs. Its expected result was recorded in
+advance here as drift-dominant on UK like the rest, which is correct (ratios
+6.47 and 6.03); what was not anticipated is that being drift-dominant would put
+it in a different *position* in each cell.
 
 ## What would change this answer
 
@@ -378,9 +398,10 @@ a measurement.
 - ~~**Both axes from one vantage.**~~ Done, and run from both vantages, see
   section 5. It overturned the earlier conclusion: the two-group split is an AU
   artefact, and only the ordering is vantage-invariant.
-- **Holmes on the UK vantage.** The one gap in the 5x2 grid, about 22 minutes.
-  Expected to be drift-dominant like the other four, which would make the
-  section 5 result unanimous rather than four-of-four in three of its four cells.
+- ~~**Holmes on the UK vantage.**~~ Done, and it cost the section 5 conclusion
+  some of its strength rather than confirming it: Holmes is drift-dominant on UK
+  as expected, but its *position* in the ordering moves between cells, so the
+  invariant ordering covers four classifiers and not five.
 
 ## Reproducing
 
