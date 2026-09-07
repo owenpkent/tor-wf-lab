@@ -20,11 +20,12 @@ to six months of drift. RF is the strongest against drift (0.748) and gives up
 Sections 4 and 5 qualify this heavily, and were added after the original
 verdict. The network axis as the thesis measures it is a single country pair, and
 it is the hardest of the four available, for every classifier. Worse, *which* of
-the two axes costs a classifier more turns out to depend on where it was trained
-rather than on the classifier: from the AU vantage two of five are
-network-limited, from the UK vantage none are. What is stable is the **ordering**,
-by how network-sensitive a classifier is relative to its drift damage, which is
-identical from both vantages and across all four country pairs.
+the two axes costs a classifier more turns out to depend on the training vantage
+and the target country rather than on the classifier: of the four
+vantage-and-target cells measured, only AU->CA yields any network-limited
+classifier at all, 2 of 5, and the other three yield none. What is stable is the
+**ordering**, by how network-sensitive a classifier is relative to its drift
+damage, which is identical in all four cells and across all four country pairs.
 
 **The stronger claim, that the two axes are genuinely independent properties, is
 carried almost entirely by RF.** Three of the five classifiers rank identically
@@ -40,7 +41,7 @@ in general.
 | | |
 |---|---|
 | GPU | RTX 5090, driver 610.88, torch 2.11.0+cu128, capability `(12, 0)`, `sm_120` present |
-| Data | 8 OSF collections, ~3.1 GB, extracted from the bulk archive, all 8 sha512-verified against the authors' lists |
+| Data | 8 OSF collections, 3.2 GB, extracted from the bulk archive, all 8 sha512-verified against the authors' lists |
 | Protocol | 20% stratified in-distribution holdout per seed, seeds 0/1/2, identical 16,528 / 4,132 split for every classifier |
 | World | Closed. The open-world background set is DUA-gated and absent |
 
@@ -210,13 +211,28 @@ that cannot cross networks. RF is second or third worst on every pair and never
 the worst, so the dramatic version of the claim rests on the one pair the thesis
 reports.
 
-**The training vantage matters roughly three times more than the pair.**
-Averaging each classifier's two test cells per vantage, every classifier
-degrades more trained on AU than trained on UK, by 1.3x (DF) to 4.2x (Holmes)
-and 2.9x on the mean. And AU->CA is the hardest of the four cells for all five
-classifiers, unanimously. The thesis's headline cross-network number is
-therefore measured at the most pessimistic of the four available configurations,
-for every classifier tested.
+**The training vantage and the target country both carry the effect, and they
+compound.** Averaging each classifier's two test cells per vantage, every
+classifier degrades more trained on AU than trained on UK, by 1.3x (DF) to 4.2x
+(Holmes) and 2.9x on the mean. That ratio measures the vantage alone, though,
+and says nothing about the size of the target effect. An earlier draft read it
+as "the vantage matters roughly three times more than the pair", which it does
+not measure. Putting both factors on one scale needs a target the two vantages
+share, and CA is the only one; each row below is a ratio of two cells that
+differ in exactly one thing, so the rows are comparable to each other:
+
+| Swap | Held fixed | Geometric mean over the five |
+|---|---|---|
+| vantage: AU->CA against UK->CA | target CA | 2.59x |
+| target: AU->CA against AU->UK | vantage AU | 3.54x |
+| target: UK->CA against UK->AU | vantage UK | 2.72x |
+
+The target country is the larger of the two, not the smaller, and neither leads
+by an order of magnitude. Because they compound rather than compete, one cell
+stands out: AU->CA is the hardest of the four for all five classifiers,
+unanimously. The thesis's headline cross-network number is therefore measured at
+the most pessimistic of the four available configurations, for every classifier
+tested.
 
 Median page load time is 15.97 s on AU against 11.99 s on CA and 12.05 s on UK,
 so CA and UK are near-identical and AU is about a third slower. Training on the
@@ -230,13 +246,16 @@ countries, and the released traces do not record RTT.
 **What survives.** RF is consistently among the most network-sensitive
 classifiers relative to its drift damage, on every pair. What does not survive is
 the magnitude: a large part of what the thesis attributes to network-mismatch
-robustness is carried by the choice of training vantage, which is a property of
-the measurement setup and not of the classifier.
+robustness is carried by the choice of training vantage and of target country,
+both properties of the measurement setup and not of the classifier.
 
-Note also that RF's network damage exceeds its drift damage on AU->CA alone
-(−0.269 against −0.221); on the other three pairs drift costs it more. So even
-the direction of the comparison, not just its size, depends on which pair is
-chosen. Section 5 pursues that directly.
+These four cells carry no drift cell of their own, so nothing here can be
+compared against drift directly. The main table's drift axis trains on UK over a
+106-class space while these axes are 111-class and AU- or UK-trained, and
+`data.py` and `results/netpairs/summary.md` both say those are not comparable
+cell for cell. Section 5 makes the comparison the valid way, scoring both axes
+from one training collection, and finds the direction of the network-versus-drift
+comparison flips between cells there too.
 
 **A confound this exposes in the main result.** The two axes in the main table
 are not measured from the same vantage: the cross-network axis trains on AU and
@@ -256,73 +275,92 @@ gives depends on which vantage was chosen. It does. Detail in
 `track-a-robustness/results/vantage/summary.md` and `results/vantage-uk/`.
 
 The design: one training collection, one 20% anchor, one label space, and both
-network and drift cells scored against it. Run twice, once from each vantage.
+network cells and the drift cell scored against it. Run twice, once from each
+vantage. Each vantage carries two network cells, and both are reported: an
+earlier version of `vantage_summary.py` scored both vantages against ->CA only,
+which is the harder target of the two in every case, so it read the
+network-pessimistic cell and reported it as the vantage's answer.
 
 **AU vantage** (106 classes, 3 seeds, all five classifiers):
 
-| Classifier | anchor | ->CA | AU month 6 | net | drift | drift/net |
+| Classifier | anchor | ->CA | ->UK | AU month 6 | drift/->CA | drift/->UK |
 |---|---|---|---|---|---|---|
-| DF | 0.9739 | 0.8968 | 0.6213 | −0.077 | −0.353 | 4.57 |
-| Tik-Tok | 0.9731 | 0.8719 | 0.6307 | −0.101 | −0.342 | 3.39 |
-| k-FP | 0.9440 | 0.7074 | 0.5218 | −0.237 | −0.422 | 1.78 |
-| Holmes | 0.9737 | 0.5185 | 0.5771 | −0.455 | −0.397 | 0.87 |
-| RF | 0.9689 | 0.7123 | 0.7649 | −0.257 | −0.204 | 0.79 |
+| DF | 0.9739 | 0.8968 (−0.077) | 0.9609 (−0.013) | 0.6213 (−0.353) | 4.57 | 26.99 |
+| Tik-Tok | 0.9731 | 0.8719 (−0.101) | 0.9468 (−0.026) | 0.6307 (−0.342) | 3.39 | 13.03 |
+| k-FP | 0.9440 | 0.7074 (−0.237) | 0.8605 (−0.084) | 0.5218 (−0.422) | 1.78 | 5.05 |
+| Holmes | 0.9737 | 0.5185 (−0.455) | 0.7218 (−0.252) | 0.5771 (−0.397) | 0.87 | 1.57 |
+| RF | 0.9689 | 0.7123 (−0.257) | 0.9094 (−0.059) | 0.7649 (−0.204) | 0.79 | 3.43 |
 
-**UK vantage** (3 seeds; Holmes not run, see below):
+**UK vantage** (106 classes, 3 seeds; Holmes not run, see below):
 
-| Classifier | anchor | ->CA | UK month 6 | net | drift | drift/net |
+| Classifier | anchor | ->AU | ->CA | UK month 6 | drift/->AU | drift/->CA |
 |---|---|---|---|---|---|---|
-| DF | 0.9754 | 0.9219 | 0.6390 | −0.053 | −0.336 | 6.29 |
-| Tik-Tok | 0.9702 | 0.9125 | 0.6282 | −0.058 | −0.342 | 5.93 |
-| k-FP | 0.9451 | 0.8475 | 0.4805 | −0.098 | −0.465 | 4.76 |
-| RF | 0.9675 | 0.8910 | 0.7555 | −0.076 | −0.212 | 2.77 |
+| DF | 0.9754 | 0.9671 (−0.008) | 0.9219 (−0.053) | 0.6390 (−0.336) | 40.55 | 6.29 |
+| Tik-Tok | 0.9702 | 0.9584 (−0.012) | 0.9125 (−0.058) | 0.6282 (−0.342) | 28.87 | 5.93 |
+| k-FP | 0.9451 | 0.9070 (−0.038) | 0.8475 (−0.098) | 0.4805 (−0.465) | 12.20 | 4.76 |
+| RF | 0.9675 | 0.9480 (−0.019) | 0.8910 (−0.076) | 0.7555 (−0.212) | 10.87 | 2.77 |
 
 ### What does not survive
 
-**Which axis costs a classifier more is not a property of the classifier.** From
-the AU vantage, two of five classifiers are network-dominant (ratio below 1).
-From the UK vantage, **none of the four are**; every ratio is between 2.8 and
-6.3. An earlier draft of this document claimed the AU result was the
-confound-free answer and that classifiers "split cleanly into two groups". That
-was wrong. The split is a property of the AU vantage, which section 4 had
-already identified as the pessimistic one for network mismatch, and it
-disappears entirely when the same test is run from UK.
+**Which axis costs a classifier more is not a property of the classifier.** A
+ratio below 1 means network mismatch costs more than six months of drift. Across
+the four (vantage, target) cells measured:
+
+| Vantage -> target | network-limited | ratios |
+|---|---|---|
+| AU -> CA | **2 of 5** | 0.79 to 4.57 |
+| AU -> UK | 0 of 5 | 1.57 to 26.99 |
+| UK -> AU | 0 of 4 | 10.87 to 40.55 |
+| UK -> CA | 0 of 4 | 2.77 to 6.29 |
+
+Only AU->CA produces a network-limited classifier at all, and that is the single
+cell section 4 finds hardest for every classifier tested. An earlier draft of
+this document claimed the AU result was the confound-free answer and that
+classifiers "split cleanly into two groups". That was wrong twice over: it drew
+its conclusion from inside the pessimistic vantage, and within that vantage from
+the pessimistic of the two network cells that had been measured. The split
+disappears in all three other cells.
 
 ### What does survive
 
 **The ordering is invariant.** Ranking classifiers by drift damage over network
 damage, that is by how network-sensitive they are relative to how drift-sensitive:
 
-| | order, least drift-dominated first |
+| Vantage -> target | order, least drift-dominated first |
 |---|---|
-| AU vantage | RF < k-FP < Tik-Tok < DF |
-| UK vantage | RF < k-FP < Tik-Tok < DF |
+| AU -> CA | RF < Holmes < k-FP < Tik-Tok < DF |
+| AU -> UK | Holmes < RF < k-FP < Tik-Tok < DF |
+| UK -> AU | RF < k-FP < Tik-Tok < DF |
+| UK -> CA | RF < k-FP < Tik-Tok < DF |
 
-Identical, Spearman 1.000 over the four classifiers run on both. RF is the most
-network-sensitive relative to drift from either vantage and DF the least, and the
-absolute ratios shift together by roughly a factor of three without reordering.
+Identical over the four classifiers run in every cell, pairwise Spearman 1.000.
+RF is the most network-sensitive relative to drift in every cell and DF the
+least, while the absolute ratios shift together by up to an order of magnitude
+without reordering. Holmes, run only from AU, is the one classifier whose place
+moves: it leads the ordering against ->UK and sits second against ->CA.
 
 ### What this does to the hypothesis
 
 Read as *"some classifiers are network-limited and others are drift-limited"*,
 the two-axis claim is **not supported**. Which group a classifier falls into is
-set by where it was trained, not by the classifier.
+set by where it was trained and which country it was tested against, not by the
+classifier.
 
 Read as *"classifiers differ consistently and substantially in how much network
 mismatch costs them relative to drift"*, it **is supported**, and that ordering
-is the most stable quantity found anywhere in this run: unchanged across
-vantages, across the four country pairs of section 4, and between the closed
-world here and the thesis's open world.
+is the most stable quantity found anywhere in this run: unchanged across all
+four vantage-and-target cells above, across the four country pairs of section 4,
+and between the closed world here and the thesis's open world.
 
 The practical consequence is that a two-axis scatter plot is a misleading way to
-present this. A classifier's position moves with the vantage; only its position
-*relative to other classifiers* is meaningful. `results/axes.png` should be read
+present this. A classifier's position moves with the vantage and with the target
+country; only its position *relative to other classifiers* is meaningful. `results/axes.png` should be read
 that way, and its absolute coordinates should not be quoted.
 
 **Holmes was not run on the UK vantage.** It is 22 of the 35 minutes the full
 grid costs, and the four classifiers already settle the question the run was
-asked. Its AU ratio of 0.87 is the second lowest, so it would be expected around
-3 to 5 on UK and drift-dominant like the rest, but that is an expectation and not
+asked. Its AU ratios of 0.87 and 1.57 are among the lowest, so it would be
+expected to be drift-dominant on UK like the rest, but that is an expectation and not
 a measurement.
 
 ## What would change this answer
@@ -335,14 +373,14 @@ a measurement.
 - **RF's seed variance.** At sd 0.0217 on the cell that carries the argument,
   three seeds is thin. Ten would be cheap, about 7 minutes.
 - ~~**A second network pair.**~~ Done, see section 4, and it mattered more than
-  expected: the training vantage carries about 3x more of the effect than the
-  pair does.
+  expected: the training vantage and the target country each move degradation by
+  roughly 2.5x to 3.5x, and they compound in the one cell the thesis reports.
 - ~~**Both axes from one vantage.**~~ Done, and run from both vantages, see
   section 5. It overturned the earlier conclusion: the two-group split is an AU
   artefact, and only the ordering is vantage-invariant.
 - **Holmes on the UK vantage.** The one gap in the 5x2 grid, about 22 minutes.
   Expected to be drift-dominant like the other four, which would make the
-  section 5 result unanimous rather than four-of-four.
+  section 5 result unanimous rather than four-of-four in three of its four cells.
 
 ## Reproducing
 
@@ -370,11 +408,12 @@ for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 
   --axes vantage-au --tag vantage/$m; done
 python track-a-robustness/src/run_kfp.py 3 --axes vantage-au --tag vantage/kfp
 python track-a-robustness/src/run_holmes.py --seeds 3 --axes vantage-au --tag vantage/holmes
-python track-a-robustness/src/vantage_summary.py
 # the same test from the UK vantage, section 5
 for m in df tiktok rf; do python track-a-robustness/src/run_torch.py $m --seeds 3 \
   --axes vantage-uk --tag vantage-uk/$m; done
 python track-a-robustness/src/run_kfp.py 3 --axes vantage-uk --tag vantage-uk/kfp
+python track-a-robustness/src/vantage_summary.py   # reads both vantages, run last
+python track-a-robustness/src/holmes_coverage.py   # which classes Holmes could not attribute
 ```
 
 About 3.5 hours of GPU time end to end, dominated by Holmes at roughly 7.6

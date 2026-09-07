@@ -26,6 +26,34 @@ PAIRS = [("cross-network-post-au", "ca", "AU->CA"),
          ("cross-network-post-uk", "au", "UK->AU"),
          ("cross-network-post-uk", "ca", "UK->CA")]
 ORDER = ["k-FP", "DF", "Tik-Tok", "RF", "Holmes"]
+THESIS_CELL = "AU->CA"      # thesis Table 4.1, the single pair it measures
+
+_NTH = ("second", "third", "fourth", "fifth", "sixth", "seventh", "eighth",
+        "ninth", "tenth")
+
+
+def ordinal(rank, field):
+    """1 = worst of `field`, `field` = least degraded. Generated rather than
+    looked up, so adding or dropping a classifier cannot mislabel a rank."""
+    if rank == 1:
+        return "worst"
+    if rank >= field:
+        return "least degraded"
+    return f"{_NTH[rank - 2]}-worst"
+
+
+def commas(items):
+    xs = list(items)
+    return " and ".join(xs) if len(xs) < 3 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+          "nine", "ten")
+
+
+def words(n):
+    """Small counts read better spelled out, and these are all computed."""
+    return _WORDS[n] if n < len(_WORDS) else str(n)
 
 
 def mean(rows, axis, cell):
@@ -46,7 +74,7 @@ def main():
             continue
         a = mean(d["rows"], "cross-network", "in-dist")
         c = mean(d["rows"], "cross-network", "ca")
-        if a and c:
+        if a is not None and c is not None:   # a legitimate 0.0 is not 'missing'
             main_ref[d["classifier"]] = c - a
 
     names = [n for n in ORDER if n in data]
@@ -83,64 +111,72 @@ def main():
         L.append(f"- **{label}**: " + ", ".join(f"{n} {d:+.3f}" for n, d in vals))
 
     if "RF" in deg:
-        rf = [d for d in deg["RF"] if d is not None]
-        # RF's rank among classifiers on each pair, 1 = worst. Computed, not
-        # asserted, so this sentence cannot drift from the table above it.
-        ranks = []
-        for i in range(len(PAIRS)):
+        # Everything about RF below is computed from the table above, the
+        # ordinals and the counts included, so these sentences cannot drift
+        # from it. The pair index is preserved throughout, so a missing cell
+        # drops that pair rather than silently relabelling the others.
+        rf_cells = [(PAIRS[i][2], deg["RF"][i]) for i in range(len(PAIRS))
+                    if deg["RF"][i] is not None]
+        ranks = {}
+        for i, (_, _, label) in enumerate(PAIRS):
+            if deg["RF"][i] is None:
+                continue
             vals = sorted((deg[n][i], n) for n in names if deg[n][i] is not None)
-            ranks.append(1 + [n for _, n in vals].index("RF"))
-        uniq = sorted(set(ranks))
-        ordinal = {1: "worst", 2: "second-worst", 3: "third-worst",
-                   4: "fourth-worst", 5: "least degraded"}
-        if len(uniq) == 1:
-            rf_rank_sentence = (f"RF is the {ordinal[uniq[0]]} classifier on every one of "
-                                f"the four pairs, and remains among the most "
-                                f"network-sensitive relative to its drift damage.")
-        else:
-            rf_rank_sentence = (f"RF ranks "
-                                f"{', '.join(ordinal[r] for r in uniq)} across the four "
-                                f"pairs (worst on {ranks.count(1)} of {len(ranks)}), and "
-                                f"remains the most network-sensitive of the five relative "
-                                f"to its drift damage, an ordering that also holds from "
-                                f"both training vantages (see ../vantage/summary.md).")
-        L += ["",
-              "## What this does to the verdict",
-              "",
-              f"RF's degradation is {abs(rf[0]):.3f} on AU->CA and between "
-              f"{min(abs(d) for d in rf[1:]):.3f} and {max(abs(d) for d in rf[1:]):.3f} on the other",
-              "three pairs. Its cross-network weakness is therefore **largely specific to the",
-              "one pair the thesis reports**. On the other three it is comfortably ahead of",
-              "k-FP and within a few points of Tik-Tok, which is not the profile of a",
-              "classifier that cannot cross networks.",
-              "",
-              "This weakens, but does not eliminate, the two-axis reading. " + rf_rank_sentence,
-              "But the dramatic version of the claim, that RF simply fails across networks,",
-              "rests on AU->CA.",
-              "",
-              "Two controls worth noting. RF's AU->CA degradation reproduces across datasets",
-              "(post-Conflux here against the pre-Conflux main table, rightmost column), so",
-              "this is a real property of that pair rather than a dataset artefact. And every",
-              "classifier finds CA the hardest target from either vantage, so CA is generally",
-              "hostile and RF is disproportionately hurt by it rather than uniquely so.",
-              "",
-              "The honest summary is that 'network-mismatch robustness' as the thesis",
-              "measures it is one country pair, and at least for RF the choice of pair",
-              "carries most of the effect.",
-              "",
-              "Note also that RF's network damage exceeds its drift damage on AU->CA",
-              "alone; on the other three pairs drift costs it more. Even the direction of",
-              "the network-versus-drift comparison, not just its size, depends on which",
-              "pair is chosen. `../vantage/summary.md` pursues that with both axes",
-              "measured from a single training collection."]
+            ranks[label] = (1 + [n for _, n in vals].index("RF"), len(vals))
 
-    # ---- training vantage, which turns out to matter more than the pair
-    L += ["", "## The training vantage matters more than the pair", "",
+        if len(rf_cells) >= 2 and ranks:
+            uniq = sorted({r for r, _ in ranks.values()})
+            field = max(k for _, k in ranks.values())
+            n_worst = sum(1 for r, _ in ranks.values() if r == 1)
+            if len(uniq) == 1:
+                rf_rank = [f"RF is the {ordinal(uniq[0], field)} classifier on every one of",
+                           f"the {words(len(ranks))} pairs."]
+            else:
+                rf_rank = [f"RF ranks {commas(ordinal(r, field) for r in uniq)} across the "
+                           f"{words(len(ranks))} pairs",
+                           f"(worst on {n_worst} of {len(ranks)})."]
+            rf_rank += ["How that trades off against its drift damage is measured in",
+                        "`../vantage/summary.md`."]
+
+            worst_label, worst_val = min(rf_cells, key=lambda t: t[1])
+            rest = [abs(v) for lbl, v in rf_cells if lbl != worst_label]
+            L += ["",
+                  "## What this does to the verdict",
+                  "",
+                  f"RF's degradation is {abs(worst_val):.3f} on {worst_label} and between "
+                  f"{min(rest):.3f} and {max(rest):.3f} on the other {words(len(rest))}",
+                  "pairs. Its cross-network weakness is therefore **largely specific to the",
+                  "one pair the thesis reports**. On the other three it is comfortably ahead of",
+                  "k-FP and within a few points of Tik-Tok, which is not the profile of a",
+                  "classifier that cannot cross networks.",
+                  "",
+                  "This weakens, but does not eliminate, the two-axis reading.",
+                  *rf_rank,
+                  "But the dramatic version of the claim, that RF simply fails across networks,",
+                  f"rests on {worst_label}.",
+                  "",
+                  "Two controls worth noting. RF's AU->CA degradation reproduces across datasets",
+                  "(post-Conflux here against the pre-Conflux main table, rightmost column), so",
+                  "this is a real property of that pair rather than a dataset artefact. And every",
+                  "classifier finds CA the hardest target from either vantage, so CA is generally",
+                  "hostile and RF is disproportionately hurt by it rather than uniquely so.",
+                  "",
+                  "The honest summary is that 'network-mismatch robustness' as the thesis",
+                  "measures it is one country pair, and at least for RF the choice of pair",
+                  "carries most of the effect.",
+                  "",
+                  f"Note also that RF's network damage exceeds its drift damage on {worst_label}",
+                  "alone; on the other three pairs drift costs it more. Even the direction of",
+                  "the network-versus-drift comparison, not just its size, depends on which",
+                  "pair is chosen. `../vantage/summary.md` pursues that with both axes",
+                  "measured from a single training collection."]
+
+    # ---- how much of the effect is the vantage, and how much the target
+    L += ["", "## Vantage and target both carry the effect, and they compound", "",
           "Averaging each classifier's two test cells per training vantage:", "",
           "| Classifier | trained AU | trained UK | ratio |", "|---|---|---|---|"]
-    au_all, uk_all = [], []
+    au_all, uk_all, vratio = [], [], []
     for n in names:
-        rows = data[n]
         au = [deg[n][0], deg[n][1]]
         uk = [deg[n][2], deg[n][3]]
         if any(v is None for v in au + uk):
@@ -148,31 +184,96 @@ def main():
         a, b = abs(np.mean(au)), abs(np.mean(uk))
         au_all.append(a)
         uk_all.append(b)
+        vratio.append(a / b)
         L.append(f"| {n} | {a:.3f} | {b:.3f} | {a/b:.2f}x |")
     if au_all:
         ma, mb = float(np.mean(au_all)), float(np.mean(uk_all))
         L += [f"| **mean** | **{ma:.3f}** | **{mb:.3f}** | **{ma/mb:.2f}x** |", ""]
 
-        # which single cell is hardest, per classifier
-        hardest = {}
-        for n in names:
-            cells = [(deg[n][i], PAIRS[i][2]) for i in range(len(PAIRS))
-                     if deg[n][i] is not None]
-            if cells:
-                hardest[n] = min(cells)[1]
-        unanimous = len(set(hardest.values())) == 1
+        lo, hi = min(vratio), max(vratio)
+        if lo >= 1:
+            L += [f"Every classifier degrades more when trained on AU than when trained on",
+                  f"UK, by {lo:.1f}x to {hi:.1f}x, and {ma/mb:.1f}x on average."]
+        else:
+            k = sum(1 for r in vratio if r > 1)
+            L += [f"{k} of {len(vratio)} classifiers degrade more when trained on AU than",
+                  f"when trained on UK. The ratios run {lo:.1f}x to {hi:.1f}x, and",
+                  f"{ma/mb:.1f}x on average."]
 
-        L += [f"Every classifier degrades more when trained on AU than when trained on "
-              f"UK, by {min(au_all[i]/uk_all[i] for i in range(len(au_all))):.1f}x to "
-              f"{max(au_all[i]/uk_all[i] for i in range(len(au_all))):.1f}x, "
-              f"and {ma/mb:.1f}x on average."]
-        if unanimous:
+        # That column compares AU-trained against UK-trained and says nothing
+        # about the size of the target effect, so on its own it cannot rank the
+        # two factors against each other. An earlier draft read it as "the
+        # training vantage matters more than the pair", which it does not
+        # measure. Putting both on one scale needs a target the two vantages
+        # share, and CA is the only one: hold it fixed to isolate the vantage,
+        # hold the vantage fixed to isolate the target.
+        idx = {p[2]: i for i, p in enumerate(PAIRS)}
+        swaps = [("vantage swap", "AU->CA", "UK->CA"),
+                 ("target swap, AU-trained", "AU->CA", "AU->UK"),
+                 ("target swap, UK-trained", "UK->CA", "UK->AU")]
+        rows_ok = [n for n in names
+                   if all(deg[n][idx[c]] not in (None, 0) for _, x, y in swaps
+                          for c in (x, y))]
+        if rows_ok:
             L += ["",
-                  f"**{list(hardest.values())[0]} is the hardest of the four cells for all "
-                  f"{len(hardest)} classifiers, unanimously.** That is the cell the thesis "
-                  "reports, and the only one it reports. Its headline cross-network result is "
-                  "therefore measured at the most pessimistic of the four configurations "
-                  "available in this data, for every classifier tested."]
+                  "Both factors on one scale. Each column is a ratio of two cells that differ",
+                  "in exactly one thing, so the columns are directly comparable to each other:",
+                  "",
+                  "| Classifier | " + " | ".join(f"{lbl}<br>{x} / {y}"
+                                                 for lbl, x, y in swaps) + " |",
+                  "|---|" + "---|" * len(swaps)]
+            cols = [[] for _ in swaps]
+            for n in rows_ok:
+                cells = []
+                for j, (_, x, y) in enumerate(swaps):
+                    r = abs(deg[n][idx[x]]) / abs(deg[n][idx[y]])
+                    cols[j].append(r)
+                    cells.append(f"{r:.2f}x")
+                L.append(f"| {n} | " + " | ".join(cells) + " |")
+            geo = [float(np.exp(np.mean(np.log(c)))) for c in cols]
+            L.append("| **geometric mean** | " +
+                     " | ".join(f"**{g:.2f}x**" for g in geo) + " |")
+
+            v, t = geo[0], max(geo[1], geo[2])
+            if t > v:
+                verdict = [f"The target country is the larger of the two: swapping it costs",
+                           f"up to {t:.1f}x, against {v:.1f}x for swapping the training vantage."]
+            elif v > t:
+                verdict = [f"The training vantage is the larger of the two: swapping it",
+                           f"costs {v:.1f}x, against at most {t:.1f}x for swapping the target."]
+            else:
+                verdict = ["The two factors are the same size on this data.", ""]
+            L += ["", verdict[0], verdict[1],
+                  "Neither is an order of magnitude larger than the other, and they compound",
+                  f"rather than compete, which is what makes one cell stand out from the",
+                  f"{words(len(PAIRS))}."]
+
+        # Which single cell is hardest, and which easiest, per classifier.
+        def extreme(pick):
+            out = {}
+            for n in names:
+                cells = [(deg[n][i], PAIRS[i][2]) for i in range(len(PAIRS))
+                         if deg[n][i] is not None]
+                if cells:
+                    out[n] = pick(cells)[1]
+            return out
+
+        hardest, easiest = extreme(min), extreme(max)
+
+        if len(set(hardest.values())) == 1:
+            cell = next(iter(hardest.values()))
+            L += ["",
+                  f"**{cell} is the hardest of the {words(len(PAIRS))} cells for all "
+                  f"{words(len(hardest))} classifiers, unanimously.**"]
+            if cell == THESIS_CELL:
+                L += ["That is the cell the thesis reports, and the only one it reports. Its",
+                      "headline cross-network result is therefore measured at the most",
+                      f"pessimistic of the {words(len(PAIRS))} configurations available in this data,",
+                      "for every classifier tested."]
+            else:
+                L += [f"The thesis reports {THESIS_CELL}, which is not that cell, so its",
+                      "headline cross-network result is not the most pessimistic of the",
+                      f"{words(len(PAIRS))} configurations available in this data."]
 
         L += ["",
               "The timing profiles suggest why. Median page load time on the post-Conflux",
@@ -180,22 +281,25 @@ def main():
               "UK, so CA and UK are near-identical to each other and AU is roughly a third",
               "slower. Training on the outlier vantage means learning a timing distribution",
               "that matches neither of the others, while training on UK, which sits in the",
-              "middle, transfers both ways. The effect is asymmetric in exactly the way that",
-              "predicts: training on AU and testing elsewhere is costly, while training",
-              "elsewhere and testing on AU is among the cheapest cells in the table.",
-              "",
+              "middle, transfers both ways."]
+        if len(set(hardest.values())) == 1 and len(set(easiest.values())) == 1:
+            L += ["The effect is asymmetric in exactly the way that predicts:",
+                  f"{next(iter(hardest.values()))} is the costliest cell",
+                  f"and {next(iter(easiest.values()))} the cheapest, for every classifier "
+                  f"tested."]
+        L += ["",
               "This is a mechanism consistent with the data, not a demonstrated cause. Three",
               "vantages is not enough to separate load time from every other thing that",
               "differs between countries, and no attempt was made to control for the",
               "underlying RTT, which is not recorded in the released traces.",
               "",
-              "It does, however, change what the two-axis claim is a claim about. Much of",
-              "what the thesis attributes to a classifier's network-mismatch robustness is",
-              "carried by the choice of training vantage, which is a property of the",
-              "measurement setup rather than of the classifier."]
+              "It does, however, change what the two-axis claim is a claim about. Part of what",
+              "the thesis attributes to a classifier's network-mismatch robustness is carried",
+              "by the choice of training vantage and of target country, both of which are",
+              "properties of the measurement setup rather than of the classifier."]
 
     out = os.path.join(NET, "summary.md")
-    open(out, "w", encoding="utf-8").write("\n".join(L) + "\n")
+    open(out, "w", encoding="utf-8", newline="\n").write("\n".join(L) + "\n")
     print("\n".join(L))
     print(f"\nwrote {out}")
 

@@ -102,7 +102,7 @@ def main():
           "corroboration, not reproduction, and should not be quoted as the latter."]
 
     out = os.path.join(RESULTS, "vs-paper.md")
-    open(out, "w", encoding="utf-8").write("\n".join(L) + "\n")
+    open(out, "w", encoding="utf-8", newline="\n").write("\n".join(L) + "\n")
     print("\n".join(L))
     print(f"\nwrote {out}")
 

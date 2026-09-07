@@ -77,19 +77,22 @@ ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504 against
 **And the network axis is one country pair.** The thesis measures
 network-mismatch robustness at a single point, train AU test CA. Across the four
 ordered pairs the post-Conflux collections allow, that cell is the hardest of the
-four for all five classifiers, unanimously, and the training vantage carries
-about 2.9x more of the effect than the pair does. RF's collapse is largely
-specific to it: 0.269 there against 0.026 to 0.074 on the other three.
+four for all five classifiers, unanimously, because the training vantage and the
+target country each move degradation by roughly 2.5x to 3.5x and compound in that
+one cell. RF's collapse is largely specific to it: 0.269 there against 0.026 to
+0.074 on the other three.
 `track-a-robustness/results/netpairs/summary.md`.
 
 **Measured from one vantage, the grouping does not survive.** The thesis's two
 axes do not share a training collection (Table 4.1 trains AU, Table 4.3 trains
 UK), which entangles vantage with axis. Removing the confound shows that *which*
-axis costs a classifier more is set by the training vantage rather than by the
-classifier: AU-trained, 2 of 5 are network-limited; UK-trained, 0 of 4 are. What
-is invariant is the ordering by network sensitivity relative to drift,
-RF < k-FP < Tik-Tok < DF, identical from both vantages (Spearman 1.000).
-`track-a-robustness/results/vantage/summary.md`.
+axis costs a classifier more is set by the training vantage and the target
+country rather than by the classifier: of the four vantage-and-target cells
+measured, only AU->CA yields any network-limited classifier at all (2 of 5), and
+the other three yield none. What is invariant is the ordering by network
+sensitivity relative to drift, RF < k-FP < Tik-Tok < DF, identical in all four
+cells (pairwise Spearman 1.000).
+`track-a-robustness/results/vantage/summary.md` and `results/vantage-uk/`.
 
 **What this run cannot claim.** The open-world background set is behind a data
 use agreement, so every number here is closed-world macro F1 and every number in

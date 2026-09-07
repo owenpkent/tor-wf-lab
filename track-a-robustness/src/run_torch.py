@@ -223,6 +223,7 @@ def main():
     os.makedirs(RESULTS, exist_ok=True)
     tag = a.tag or a.model
     out = os.path.join(RESULTS, f"{tag}.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)   # --tag may name a subdir
     payload = {"classifier": CONFIG[a.model]["name"], "world": "closed",
                "hyperparameters": {k: v for k, v in CONFIG[a.model].items()
                                    if k not in ("net", "tf")},

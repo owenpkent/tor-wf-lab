@@ -36,8 +36,9 @@ country pairs. Full argument in the verdict, sections 4 and 5.
    axes matches theirs exactly, but that is corroboration and must not be quoted
    as reproduction.
    `results/vs-paper.md`.
-4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 306 result rows
-   across 25 files. `results/axes-table.md`. Seed variance is not uniform: RF's
+4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 303 result rows
+   across 23 files, plus 3 rows in the two `results/scratch/` gate checks.
+   `results/axes-table.md`. Seed variance is not uniform: RF's
    cross-network cell has sd 0.0217 against DF's 0.0021 on the same cell.
 5. **One scatter plot.** Done, `results/axes.png`, five points with error bars,
    both axes labelled closed-world in the figure itself. Read it for the
@@ -53,11 +54,14 @@ scoring even though the cell values do not.
 
 ```
 src/     fetch and verify, loaders, the five classifiers, the runners, the plot
-data/    OSF traces, gitignored, 8 collections and 3.0 GB
+data/    OSF traces, gitignored, 8 collections and 3.2 GB
 results/ per-classifier JSON, the generated tables, the figure
-  netpairs/   four country pairs, section 4 of the verdict
-  vantage/    both axes from one vantage, and the same test from a second
-logs/    deltas.md (every deviation), paper-numbers.md, osf-inventory.md
+  netpairs/    four country pairs, section 4 of the verdict
+  vantage/     both axes from the AU vantage, plus the generated summary
+  vantage-uk/  the same test from the UK vantage, section 5
+  scratch/     the two runbook gate checks, not part of the deliverable counts
+logs/    deltas.md (every deviation), paper-numbers.md, osf-inventory.md,
+         holmes-attr-coverage.md (which classes Holmes could not attribute)
 RUNBOOK-5090.md   what was run on the GPU box, and what it cost
 ```
 
