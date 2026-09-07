@@ -151,7 +151,10 @@ track-a-robustness/
   src/                      fetch and verify, loaders, the five classifiers, runners, plot
   data/                     OSF traces, gitignored, 10.6 GB
   results/                  per-classifier JSON, generated tables, the scatter plot
-  logs/                     deltas.md, paper-numbers.md, osf-inventory.md
+    netpairs/               four country pairs, verdict section 4
+    vantage/, vantage-uk/   both axes from each training vantage, section 5
+  logs/                     deltas.md, paper-numbers.md, osf-inventory.md,
+                            holmes-attr-coverage.md
   RUNBOOK-5090.md           what ran on the GPU box, and what it cost
 track-b-conflux/
   notes/                    01-05 scoping, 06-07 measurement, 08-09 Shadow
