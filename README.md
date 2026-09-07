@@ -63,7 +63,7 @@ dispatched at `conflux.c:697`, and unreachable. No UX value maps to it.
 
 ## Are the two robustness axes really distinct?
 
-Five classifiers, both axes, three seeds, closed world.
+Five classifiers, both axes, closed world. Three seeds each, ten for RF.
 
 ![Cross-network F1 against six-month drift F1](track-a-robustness/results/axes.png)
 
@@ -71,7 +71,7 @@ No classifier is good at both, so the hypothesis holds in its weaker form. The
 stronger claim, that the axes are independent properties, rests almost entirely
 on RF: it is the one classifier that inverts, fourth of five against network
 mismatch and first against drift. Two are hurt more by changing country than by
-ageing six months, RF (−0.250 against −0.221) and Holmes (−0.504 against
+ageing six months, RF (−0.243 against −0.216) and Holmes (−0.504 against
 −0.403); the other three lose far more to drift. Two follow-ups, both below,
 qualify that table heavily and limit what it can support.
 

@@ -3,8 +3,11 @@
 Against Shadbeh, Khajavi & Wang, *Reality Check for Tor Website Fingerprinting
 in the Open World* (arXiv:2603.07412). Brief: `prompts/prompt-a-robustness-axes.md`.
 
-Five classifiers, both axes, 3 seeds each, closed world, run on an RTX 5090 on
-2026-09-06. Numbers: `track-a-robustness/results/axes-table.md`. Figure:
+Five classifiers, both axes, closed world, run on an RTX 5090 on 2026-09-06.
+Three seeds each except RF, which is ten: it is the noisiest classifier on the
+cell that carries the argument, and the extra seeds cost 7 minutes.
+
+Numbers: `track-a-robustness/results/axes-table.md`. Figure:
 `results/axes.png`. Slot-size sweep: `results/rf-slot-sweep.md`. Comparison to
 the published tables: `results/vs-paper.md`. Every deviation from the published
 configurations: `track-a-robustness/logs/deltas.md`.
@@ -14,8 +17,8 @@ configurations: `track-a-robustness/logs/deltas.md`.
 **The hypothesis holds: no classifier is good at both.** Every one of the five
 loses heavily on at least one axis, and the two best are best at different
 things. DF is the strongest against network mismatch (0.968) and gives up 0.331
-to six months of drift. RF is the strongest against drift (0.748) and gives up
-0.250 across networks. Nothing sits in the top-right of the scatter.
+to six months of drift. RF is the strongest against drift (0.753) and gives up
+0.243 across networks. Nothing sits in the top-right of the scatter.
 
 Sections 4 and 5 qualify this heavily, and were added after the original
 verdict. The network axis as the thesis measures it is a single country pair, and
@@ -62,24 +65,32 @@ difference **0.0**.
 
 ## The numbers
 
-Closed-world macro F1, mean ± sd over 3 seeds.
+Closed-world macro F1, mean ± sd over seeds: 3 for every classifier except RF,
+which is 10. `results/axes-table.md` carries the seed count per cell.
 
 | Classifier | cross-network CA | drift month 6 | Δ network | Δ drift |
 |---|---|---|---|---|
 | DF | **0.9675 ± 0.0021** | 0.6469 ± 0.0139 | −0.008 | −0.331 |
 | Tik-Tok | 0.9481 ± 0.0048 | 0.6217 ± 0.0072 | −0.026 | −0.353 |
 | k-FP | 0.7973 ± 0.0036 | 0.4874 ± 0.0013 | −0.161 | −0.463 |
-| RF | 0.7179 ± 0.0217 | **0.7481 ± 0.0069** | −0.250 | −0.221 |
+| RF | 0.7244 ± 0.0190 | **0.7530 ± 0.0044** | −0.243 | −0.216 |
 | Holmes | 0.4529 ± 0.0047 | 0.5739 ± 0.0120 | −0.504 | −0.403 |
 
 Δ is measured against that axis's own in-distribution anchor, so it reads as
 degradation rather than as an absolute score.
 
-Seed variance is small but not uniform. RF's cross-network cell has sd 0.0217,
-roughly ten times DF's 0.0021 on the same cell. The brief's complaint about
-single-run numbers is therefore well founded for exactly the classifier the
-two-axis argument depends on: a single RF run could have landed anywhere between
-0.688 and 0.737.
+Seed variance is small but not uniform. RF's cross-network cell has sd 0.0190
+over ten seeds, roughly nine times DF's 0.0021 over three on the same cell. The
+brief's complaint about single-run numbers is therefore well founded for exactly
+the classifier the two-axis argument depends on: across the ten seeds actually
+run, that cell landed anywhere from **0.7014 to 0.7551**, a spread of 0.054, and
+a paper reporting one run could have quoted any point in it.
+
+The ten-seed estimate moved the cell by +0.007 against the three-seed one
+(0.7179 to 0.7244) and lowered the sd from 0.0217 to 0.0190, so three seeds was
+not misleading here, merely thin. Every conclusion below is unchanged by it: RF
+remains fourth of five against network mismatch and first against drift, and its
+drift-over-network ratio stays below 1 at 0.89.
 
 ## 1. Do classifiers trade places, or simply rank the same on both?
 
@@ -100,12 +111,12 @@ ordering with two exceptions layered on top.
 
 The weaker form of the hypothesis is nonetheless clearly supported. Taking each
 classifier's *worse* axis, no classifier keeps more than it loses: the smallest
-worst-case degradation belongs to RF at −0.250, and three of the five exceed
+worst-case degradation belongs to RF at −0.243, and three of the five exceed
 −0.35. There is no classifier in this set that is simultaneously robust to both
 perturbations, which is what the brief asked.
 
 Two classifiers are hurt *more* by moving country than by ageing six months: RF
-(ratio 0.88) and Holmes (0.80), where the ratio is drift damage over network
+(ratio 0.89) and Holmes (0.80), where the ratio is drift damage over network
 damage. For the other three, drift dominates, by 39.6x for DF, 13.4x for Tik-Tok
 and 2.9x for k-FP. That ordering, not the rank inversion, is the most robust
 distinction in the data: it is why the stronger claim above rests on RF's rank
@@ -124,7 +135,7 @@ closed-world gives the opposite result on both axes.
 
 | Slot | cross-network CA | Δ | drift month 6 | Δ |
 |---|---|---|---|---|
-| 25.0 ms (N=1800) | 0.7179 | −0.250 | 0.7481 | −0.221 |
+| 25.0 ms (N=1800) | 0.7244 | −0.243 | 0.7530 | −0.216 |
 | 150.5 ms (N=300) | 0.6206 | −0.344 | 0.6179 | −0.335 |
 | 302.0 ms (N=150) | 0.5564 | −0.398 | 0.5642 | −0.362 |
 
@@ -152,13 +163,13 @@ distinction is what makes the verdict survivable.
 
 Mean absolute difference from the published values (`results/vs-paper.md`):
 
-- cross-network: **0.318**
+- cross-network: **0.319**
 - drift month 2: **0.008**
-- drift month 6: **0.037**
+- drift month 6: **0.036**
 
 The drift axis lands almost exactly on the thesis's numbers across all five
 classifiers, despite being a different measurement. The cross-network axis does
-not, and the classifiers that move most are RF (+0.672), Holmes (+0.444) and
+not, and the classifiers that move most are RF (+0.678), Holmes (+0.444) and
 k-FP (+0.367): precisely the three that carry the two-axis claim. Taken alone
 that is fatal, and it is what the brief anticipated when it warned that the gap
 between the two worlds is larger than the gaps being compared.
@@ -390,8 +401,10 @@ it in a different *position* in each cell.
 - **More classifiers.** The independence claim rests on n = 5 and on RF in
   particular. Rank correlation of 0.20 is not evidence of independence at that
   sample size; it is the absence of evidence for dependence.
-- **RF's seed variance.** At sd 0.0217 on the cell that carries the argument,
-  three seeds is thin. Ten would be cheap, about 7 minutes.
+- ~~**RF's seed variance.**~~ Done, ten seeds, about 7 minutes. sd 0.0190 rather
+  than 0.0217, the cell moved +0.007, and nothing downstream changed. The other
+  four classifiers remain at three seeds, so the table mixes seed counts and
+  `axes-table.md` states which is which per cell.
 - ~~**A second network pair.**~~ Done, see section 4, and it mattered more than
   expected: the training vantage and the target country each move degradation by
   roughly 2.5x to 3.5x, and they compound in the one cell the thesis reports.

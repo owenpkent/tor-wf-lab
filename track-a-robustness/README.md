@@ -38,10 +38,12 @@ sections 4 and 5.
    axes matches theirs exactly, but that is corroboration and must not be quoted
    as reproduction.
    `results/vs-paper.md`.
-4. **Both axes, 3+ seeds, variance reported.** Done, 3 seeds, 315 result rows
-   across 24 files, plus 3 rows in the two `results/scratch/` gate checks.
-   `results/axes-table.md`. Seed variance is not uniform: RF's
-   cross-network cell has sd 0.0217 against DF's 0.0021 on the same cell.
+4. **Both axes, 3+ seeds, variance reported.** Done. 3 seeds and 10 for RF, 350
+   result rows across 24 files, plus 3 rows in the two `results/scratch/` gate
+   checks. `results/axes-table.md`, which states the seed count per cell. Seed
+   variance is not uniform: RF's cross-network cell has sd 0.0190 over ten seeds
+   against DF's 0.0021 over three on the same cell, which is why RF alone was
+   rerun at ten.
 5. **One scatter plot.** Done, `results/axes.png`, five points with error bars,
    both axes labelled closed-world in the figure itself. Read it for the
    *relative* positions only: section 5 of the verdict shows a classifier's
