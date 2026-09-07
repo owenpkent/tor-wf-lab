@@ -31,17 +31,19 @@ Expect `(12, 0)`. If it prints `sm_120 is not compatible`, the wheel is too old
 and every run below is worthless.
 
 Data, five files and about 1.9 GB, is all the two headline axes need. Sections 4
-and 5 of the verdict later added three more collections, for 8 files and 3.0 GB:
+and 5 of the verdict later added three more collections, for 8 files and 3.2 GB.
+Fetch all eight; the last three are what sections 4 and 5 run on:
 
 ```bash
 .venv/bin/python track-a-robustness/src/fetch_osf.py \
   pre-month0-cfx0-au.npz pre-month0-cfx0-ca.npz \
-  post-month0-cfx0-uk.npz post-month2-cfx0-uk.npz post-month6-cfx0-uk.npz
+  post-month0-cfx0-uk.npz post-month2-cfx0-uk.npz post-month6-cfx0-uk.npz \
+  post-month0-cfx0-au.npz post-month0-cfx0-ca.npz post-month6-cfx0-au.npz
 .venv/bin/python track-a-robustness/src/verify_osf.py
 ```
 
 The patterns end in `.npz` deliberately, which excludes the `-nga` variants.
-`verify_osf.py` will report the other 24 as missing; only the five matter.
+`verify_osf.py` will report the other 21 as missing; only these eight matter.
 
 Write the GPU, driver, CUDA and torch versions into `logs/deltas.md` before
 running anything.

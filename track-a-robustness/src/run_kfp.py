@@ -70,6 +70,7 @@ def main():
         print(f"== {axis} ==")
         rows += evaluate(axis, seeds)
     out = os.path.join(RESULTS, f"{a.tag}.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)   # --tag may name a subdir
     json.dump({"classifier": "k-FP", "world": "closed",
                "n_estimators": N_ESTIMATORS, "rows": rows},
               open(out, "w"), indent=1)

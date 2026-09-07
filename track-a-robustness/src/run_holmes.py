@@ -137,7 +137,13 @@ def feature_attr(net, Xv, yv, n_classes, log, chunk=2):
             log(f"    [B] attributed {c+1}/{n_classes} classes "
                 f"({time.time()-t0:.0f}s)")
     width = next(a.shape[0] for a in out if a is not None)
-    return np.array([np.full(width, np.nan) if a is None else a for a in out])
+    # Which classes could not be attributed, and which were attributed over
+    # fewer than N_ATTR samples, is a deviation from their code and belongs in
+    # the artefact rather than only in stdout. See logs/deltas.md.
+    coverage = {"n_classes": n_classes, "n_bg": N_BG, "n_attr": N_ATTR,
+                "skipped": [[int(c), int(n)] for c, n in skipped],
+                "short": [[int(c), int(n)] for c, n in short]}
+    return np.array([np.full(width, np.nan) if a is None else a for a in out]), coverage
 
 
 def effective_ranges(attr_values):
@@ -313,7 +319,7 @@ def run_axis(axis, seeds, cells_filter, log):
         net_a, f1_a = train_stage_a(Xa, ya, Xav, ytr[ival], n_classes, seed, log)
 
         # ---- stage B
-        attr = feature_attr(net_a, Xav, ytr[ival], n_classes, log)
+        attr, coverage = feature_attr(net_a, Xav, ytr[ival], n_classes, log)
         rngs = effective_ranges(attr)
         spans = [hi - lo for lo, hi in rngs.values()]
         log(f"    [C] effective ranges: median {int(np.median([l for l,_ in rngs.values()]))}"
@@ -356,6 +362,7 @@ def run_axis(axis, seeds, cells_filter, log):
                 "f1_micro": float(f1_score(yte, pred, average="micro")),
                 "n_train": int(len(ifit)), "n_test": int(len(yte)),
                 "n_classes": n_classes,
+                "attr_coverage": coverage,
                 "stage_a_valid_f1": round(float(f1_a), 4),
                 "stage_d_knn_valid_f1": round(float(f1_d), 4),
                 "fit_seconds": round(time.time() - t_seed, 1),
@@ -407,15 +414,8 @@ def main():
         write(out, rows)                 # checkpoint after each axis
         print(f"  checkpointed {len(rows)} rows to {out}")
 
-    json.dump({"classifier": "Holmes", "world": "closed",
-               "pipeline": "4-stage, WFlib scripts/Holmes.sh",
-               "hyperparameters": {"stage_a": STAGE_A, "stage_d": STAGE_D,
-                                   "num_aug": NUM_AUG, "valid_frac": VALID_FRAC,
-                                   "attr_band": [ATTR_LO, ATTR_HI]},
-               "device": torch.cuda.get_device_name(0),
-               "torch": torch.__version__, "rows": rows},
-              open(out, "w"), indent=1)
-    print(f"\nwrote {out}")
+    write(out, rows)                 # the same writer as the checkpoints, so
+    print(f"\nwrote {out}")         # the final file keeps n_bg / n_attr too
     print("\nsummary (mean +/- sd over seeds)")
     for axis in sorted({r["axis"] for r in rows}):
         for cell in sorted({r["cell"] for r in rows if r["axis"] == axis}):

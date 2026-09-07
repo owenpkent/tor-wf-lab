@@ -132,7 +132,7 @@ def main():
         dx = "n/a" if not (a_x and c_x) else f"{c_x[0]-a_x[0]:+.3f}"
         dy = "n/a" if not (a_y and c_y) else f"{c_y[0]-a_y[0]:+.3f}"
         lines.append(f"| {rec['classifier']} | {dx} | {dy} |")
-    open(md[0], "w").write("\n".join(lines) + "\n")
+    open(md[0], "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
     print(f"wrote {md[0]}")
     for l in lines:
         print(l)

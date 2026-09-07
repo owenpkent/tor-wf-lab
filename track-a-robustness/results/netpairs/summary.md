@@ -25,13 +25,17 @@ Worst classifier on each pair:
 
 ## What this does to the verdict
 
-RF's degradation is 0.269 on AU->CA and between 0.026 and 0.074 on the other
-three pairs. Its cross-network weakness is therefore **largely specific to the
+RF's degradation is 0.269 on AU->CA and between 0.026 and 0.074 on the other three
+pairs. Its cross-network weakness is therefore **largely specific to the
 one pair the thesis reports**. On the other three it is comfortably ahead of
 k-FP and within a few points of Tik-Tok, which is not the profile of a
 classifier that cannot cross networks.
 
-This weakens, but does not eliminate, the two-axis reading. RF ranks second-worst, third-worst across the four pairs (worst on 0 of 4), and remains the most network-sensitive of the five relative to its drift damage, an ordering that also holds from both training vantages (see ../vantage/summary.md).
+This weakens, but does not eliminate, the two-axis reading.
+RF ranks second-worst and third-worst across the four pairs
+(worst on 0 of 4).
+How that trades off against its drift damage is measured in
+`../vantage/summary.md`.
 But the dramatic version of the claim, that RF simply fails across networks,
 rests on AU->CA.
 
@@ -51,7 +55,7 @@ the network-versus-drift comparison, not just its size, depends on which
 pair is chosen. `../vantage/summary.md` pursues that with both axes
 measured from a single training collection.
 
-## The training vantage matters more than the pair
+## Vantage and target both carry the effect, and they compound
 
 Averaging each classifier's two test cells per training vantage:
 
@@ -64,25 +68,49 @@ Averaging each classifier's two test cells per training vantage:
 | Holmes | 0.327 | 0.079 | 4.15x |
 | **mean** | **0.155** | **0.054** | **2.87x** |
 
-Every classifier degrades more when trained on AU than when trained on UK, by 1.3x to 4.2x, and 2.9x on average.
+Every classifier degrades more when trained on AU than when trained on
+UK, by 1.3x to 4.2x, and 2.9x on average.
 
-**AU->CA is the hardest of the four cells for all 5 classifiers, unanimously.** That is the cell the thesis reports, and the only one it reports. Its headline cross-network result is therefore measured at the most pessimistic of the four configurations available in this data, for every classifier tested.
+Both factors on one scale. Each column is a ratio of two cells that differ
+in exactly one thing, so the columns are directly comparable to each other:
+
+| Classifier | vantage swap<br>AU->CA / UK->CA | target swap, AU-trained<br>AU->CA / AU->UK | target swap, UK-trained<br>UK->CA / UK->AU |
+|---|---|---|---|
+| k-FP | 2.40x | 2.56x | 2.41x |
+| DF | 1.35x | 6.23x | 5.43x |
+| Tik-Tok | 1.84x | 4.16x | 3.82x |
+| RF | 3.66x | 4.54x | 2.88x |
+| Holmes | 5.31x | 1.85x | 1.03x |
+| **geometric mean** | **2.59x** | **3.54x** | **2.72x** |
+
+The target country is the larger of the two: swapping it costs
+up to 3.5x, against 2.6x for swapping the training vantage.
+Neither is an order of magnitude larger than the other, and they compound
+rather than compete, which is what makes one cell stand out from the
+four.
+
+**AU->CA is the hardest of the four cells for all five classifiers, unanimously.**
+That is the cell the thesis reports, and the only one it reports. Its
+headline cross-network result is therefore measured at the most
+pessimistic of the four configurations available in this data,
+for every classifier tested.
 
 The timing profiles suggest why. Median page load time on the post-Conflux
 month-0 collections is 15.97 s for AU against 11.99 s for CA and 12.05 s for
 UK, so CA and UK are near-identical to each other and AU is roughly a third
 slower. Training on the outlier vantage means learning a timing distribution
 that matches neither of the others, while training on UK, which sits in the
-middle, transfers both ways. The effect is asymmetric in exactly the way that
-predicts: training on AU and testing elsewhere is costly, while training
-elsewhere and testing on AU is among the cheapest cells in the table.
+middle, transfers both ways.
+The effect is asymmetric in exactly the way that predicts:
+AU->CA is the costliest cell
+and UK->AU the cheapest, for every classifier tested.
 
 This is a mechanism consistent with the data, not a demonstrated cause. Three
 vantages is not enough to separate load time from every other thing that
 differs between countries, and no attempt was made to control for the
 underlying RTT, which is not recorded in the released traces.
 
-It does, however, change what the two-axis claim is a claim about. Much of
-what the thesis attributes to a classifier's network-mismatch robustness is
-carried by the choice of training vantage, which is a property of the
-measurement setup rather than of the classifier.
+It does, however, change what the two-axis claim is a claim about. Part of what
+the thesis attributes to a classifier's network-mismatch robustness is carried
+by the choice of training vantage and of target country, both of which are
+properties of the measurement setup rather than of the classifier.
