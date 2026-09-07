@@ -46,11 +46,33 @@ CROSS_NETWORK_POST_UK = {
               "ca": "post-conflux/post-month0-cfx0-ca.npz"},
 }
 
+# The two headline axes are not measured from the same vantage: the thesis's
+# Table 4.1 trains on AU and its Table 4.3 trains on UK, and AU-trained models
+# degrade about 2.9x more in general (see results/netpairs/summary.md). Vantage
+# and axis are therefore entangled in the main result. These axes disentangle
+# them: one training collection, one in-distribution anchor, one label space,
+# with both network cells and the drift cell scored against it. Everything here
+# is directly comparable cell to cell, which is not true of the main table.
+VANTAGE_AU = {
+    "train": "post-conflux/post-month0-cfx0-au.npz",
+    "test":  {"ca": "post-conflux/post-month0-cfx0-ca.npz",
+              "uk": "post-conflux/post-month0-cfx0-uk.npz",
+              "month6": "post-conflux/post-month6-cfx0-au.npz"},
+}
+VANTAGE_UK = {
+    "train": "post-conflux/post-month0-cfx0-uk.npz",
+    "test":  {"au": "post-conflux/post-month0-cfx0-au.npz",
+              "ca": "post-conflux/post-month0-cfx0-ca.npz",
+              "month6": "post-conflux/post-month6-cfx0-uk.npz"},
+}
+
 AXES = {
     "cross-network": CROSS_NETWORK,
     "drift": DRIFT,
     "cross-network-post-au": CROSS_NETWORK_POST_AU,
     "cross-network-post-uk": CROSS_NETWORK_POST_UK,
+    "vantage-au": VANTAGE_AU,
+    "vantage-uk": VANTAGE_UK,
 }
 
 

@@ -1,0 +1,151 @@
+{
+ "classifier": "k-FP",
+ "world": "closed",
+ "n_estimators": 1000,
+ "rows": [
+  {
+   "axis": "vantage-au",
+   "cell": "in-dist",
+   "seed": 0,
+   "accuracy": 0.9543868394815553,
+   "f1_macro": 0.952462495123117,
+   "f1_micro": 0.9543868394815553,
+   "n_train": 16048,
+   "n_test": 4012,
+   "n_classes": 106,
+   "fit_seconds": 6.7
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "ca",
+   "seed": 0,
+   "accuracy": 0.7181182871347498,
+   "f1_macro": 0.7051783467032935,
+   "f1_micro": 0.7181182871347498,
+   "n_train": 16048,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 6.7
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "uk",
+   "seed": 0,
+   "accuracy": 0.8644189383070301,
+   "f1_macro": 0.861089626291146,
+   "f1_micro": 0.8644189383070301,
+   "n_train": 16048,
+   "n_test": 20910,
+   "n_classes": 106,
+   "fit_seconds": 6.7
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "month6",
+   "seed": 0,
+   "accuracy": 0.5792222001193554,
+   "f1_macro": 0.5259027953455098,
+   "f1_micro": 0.5792222001193554,
+   "n_train": 16048,
+   "n_test": 20108,
+   "n_classes": 106,
+   "fit_seconds": 6.7
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "in-dist",
+   "seed": 1,
+   "accuracy": 0.943419740777667,
+   "f1_macro": 0.9332580262031434,
+   "f1_micro": 0.943419740777667,
+   "n_train": 16048,
+   "n_test": 4012,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "ca",
+   "seed": 1,
+   "accuracy": 0.7218235542422963,
+   "f1_macro": 0.7094922196371186,
+   "f1_micro": 0.7218235542422963,
+   "n_train": 16048,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "uk",
+   "seed": 1,
+   "accuracy": 0.8645624103299856,
+   "f1_macro": 0.861583944035148,
+   "f1_micro": 0.8645624103299856,
+   "n_train": 16048,
+   "n_test": 20910,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "month6",
+   "seed": 1,
+   "accuracy": 0.5776805251641138,
+   "f1_macro": 0.5210748176270239,
+   "f1_micro": 0.5776805251641138,
+   "n_train": 16048,
+   "n_test": 20108,
+   "n_classes": 106,
+   "fit_seconds": 6.5
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "in-dist",
+   "seed": 2,
+   "accuracy": 0.9489032901296112,
+   "f1_macro": 0.9463408729300206,
+   "f1_micro": 0.9489032901296112,
+   "n_train": 16048,
+   "n_test": 4012,
+   "n_classes": 106,
+   "fit_seconds": 6.6
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "ca",
+   "seed": 2,
+   "accuracy": 0.7199474696308803,
+   "f1_macro": 0.7076488774859919,
+   "f1_micro": 0.7199474696308803,
+   "n_train": 16048,
+   "n_test": 21321,
+   "n_classes": 106,
+   "fit_seconds": 6.6
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "uk",
+   "seed": 2,
+   "accuracy": 0.8620755619320899,
+   "f1_macro": 0.8586952588500888,
+   "f1_micro": 0.8620755619320899,
+   "n_train": 16048,
+   "n_test": 20910,
+   "n_classes": 106,
+   "fit_seconds": 6.6
+  },
+  {
+   "axis": "vantage-au",
+   "cell": "month6",
+   "seed": 2,
+   "accuracy": 0.5742490551024468,
+   "f1_macro": 0.5182778971693432,
+   "f1_micro": 0.5742490551024468,
+   "n_train": 16048,
+   "n_test": 20108,
+   "n_classes": 106,
+   "fit_seconds": 6.6
+  }
+ ]
+}

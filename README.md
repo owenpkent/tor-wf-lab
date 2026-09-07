@@ -82,6 +82,14 @@ about 2.9x more of the effect than the pair does. RF's collapse is largely
 specific to it: 0.269 there against 0.026 to 0.074 on the other three.
 `track-a-robustness/results/netpairs/summary.md`.
 
+**Measured from one vantage, the trade-off survives.** The thesis's two axes do
+not share a training collection (Table 4.1 trains AU, Table 4.3 trains UK), which
+entangles vantage with axis. Scoring both from a single training collection, RF
+and Holmes are hurt more by changing network and DF, Tik-Tok and k-FP more by six
+months of drift, with a clean gap between the groups. Drift damage barely moves
+with vantage (mean difference 0.019) while network damage swings about 3x.
+`track-a-robustness/results/vantage/summary.md`.
+
 **What this run cannot claim.** The open-world background set is behind a data
 use agreement, so every number here is closed-world macro F1 and every number in
 the paper is open-world F1 at a tuned threshold. Different measurements. The
@@ -259,6 +267,7 @@ it.
 | Ours against the paper | same | `track-a-robustness/results/vs-paper.md` | `track-a-robustness/src/compare_to_paper.py` |
 | RF slot-size sweep | same | `track-a-robustness/results/rf-slot-sweep.md` | `track-a-robustness/src/run_torch.py rf --slots 300 / --slots 150`, tabulated by `sweep_summary.py` |
 | Four country pairs | `docs/track-a-robustness-axes.md` section 4 | `track-a-robustness/results/netpairs/summary.md` | `track-a-robustness/src/run_torch.py`, `run_kfp.py`, `run_holmes.py` with `--axes cross-network-post-au cross-network-post-uk`; tabulated by `netpair_summary.py` |
+| Both axes from one vantage | `docs/track-a-robustness-axes.md` section 5 | `track-a-robustness/results/vantage/summary.md` | `track-a-robustness/src/run_torch.py`, `run_kfp.py`, `run_holmes.py` with `--axes vantage-au`; tabulated by `vantage_summary.py` |
 | Ownership vs latency | `track-b-conflux/notes/06-fs-kill-test.md` | `track-b-conflux/results/fs-sweep.json` | `track-b-conflux/src/run_fs_sweep.py` |
 | What ownership is worth | `track-b-conflux/notes/07-fs-value-measured.md` | `track-b-conflux/results/fs-kfp.json` | `track-b-conflux/src/run_fs_kfp.py` |
 | Stock tor in Shadow | `track-b-conflux/notes/09-shadow-validation.md` | `track-b-conflux/results/shadow-sweep.json` | `track-b-conflux/shadow/` |
