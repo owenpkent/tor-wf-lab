@@ -5,7 +5,7 @@ Finished writeups land here.
   closed world, plus four country pairs and the same test from two training
   vantages. Verdict: no classifier is good at both; the axes are distinct as an
   ordering but not as a categorisation, because which axis limits a classifier is
-  set by where it was trained. Sections 4 and 5 were added after the original
+  set by where it was trained and which country it is tested against. Sections 4 and 5 were added after the original
   verdict and overturn part of it. Numbers, figure and sweeps live in
   `../track-a-robustness/results/`.
 - **Track B**, `track-b-memo.md`. Is Conflux scheduling that mitigates LowRTT
