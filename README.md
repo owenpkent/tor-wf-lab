@@ -130,7 +130,7 @@ Shadow, tgen and tor on PATH and lives in `track-b-conflux/shadow/`.
 
 | Track | Question | Status |
 |---|---|---|
-| A | Are network-mismatch and temporal-drift robustness distinct axes, with no classifier good at both? | Done. Five classifiers, 3 seeds, closed world. Gate 3 unsatisfiable on open data |
+| A | Are network-mismatch and temporal-drift robustness distinct axes, with no classifier good at both? | Done. Five classifiers, 3 seeds, closed world. No classifier is good at both; the axes are distinct as an *ordering* but not as a categorisation, since which axis limits a classifier depends on the training vantage. Gate 3 unsatisfiable on open data |
 | B | Is "Conflux scheduling that mitigates LowRTT latency bias" a viable multi-week project? | Done. Verdict go, narrowed. No Tor patch written, per the brief |
 
 Not done, and deliberately: no Tor patches, no open-world numbers, and no claim

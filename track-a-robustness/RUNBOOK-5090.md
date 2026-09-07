@@ -30,7 +30,8 @@ Blackwell is sm_120, so cu128 or newer. Confirm before anything else:
 Expect `(12, 0)`. If it prints `sm_120 is not compatible`, the wheel is too old
 and every run below is worthless.
 
-Data, five files and about 1.9 GB, is all the two axes need:
+Data, five files and about 1.9 GB, is all the two headline axes need. Sections 4
+and 5 of the verdict later added three more collections, for 8 files and 3.0 GB:
 
 ```bash
 .venv/bin/python track-a-robustness/src/fetch_osf.py \
@@ -173,8 +174,10 @@ Had it missed that bar it would have been reported as not run.
 
 ## 4. Runtime, as measured
 
-About 2 hours of GPU time for the whole grid, five classifiers x 3 seeds x 2
-axes, plus the four sweep runs.
+About 3.5 hours of GPU time in total: roughly 2 hours for the headline grid of
+five classifiers x 3 seeds x 2 axes plus the four sweep runs, then about 50
+minutes for the four-country-pair comparison and 45 more for the two
+single-vantage runs.
 
 | Classifier | Per training run | Note |
 |---|---|---|
@@ -215,6 +218,10 @@ The three questions the verdict had to answer, and where they landed:
    chance at n = 5, so it is reported as descriptive. The weaker claim, that no
    classifier is good at both, holds cleanly: the smallest worst-case
    degradation is RF's -0.250 and three of five exceed -0.35.
+   **Heavily qualified by verdict sections 4 and 5**, added later. The network
+   axis is one country pair and it is the hardest of the four available; and
+   which axis limits a classifier is set by the training vantage, not by the
+   classifier. Only the ordering by network sensitivity survives both checks.
 2. **Does the RF slot-size sweep explain its cross-network position away?** No.
    Widening the slot makes RF monotonically worse, not better. A drift arm was
    added as a control, which the thesis does not report, and coarsening damages
